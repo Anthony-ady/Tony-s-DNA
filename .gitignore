@@ -1,4 +1,6 @@
-# Logs
+# -----------------------------------------------------------------------------
+# Fichiers de log
+# -----------------------------------------------------------------------------
 logs
 *.log
 npm-debug.log*
@@ -7,12 +9,17 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# -----------------------------------------------------------------------------
+# Dépendances et sorties de build (Vite / Node)
+# -----------------------------------------------------------------------------
 node_modules
 dist
 dist-ssr
 *.local
 
-# Editor directories and files
+# -----------------------------------------------------------------------------
+# IDE et système
+# -----------------------------------------------------------------------------
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -23,9 +30,39 @@ dist-ssr
 *.sln
 *.sw?
 
+# -----------------------------------------------------------------------------
+# Variables d'environnement et secrets
+# Ne jamais committer de clés API, tokens ou mots de passe.
+# On peut versionner un gabarit : copier .env.example vers .env en local.
+# -----------------------------------------------------------------------------
 .env
+.env.*
+!.env.example
 
-# Data files
+# -----------------------------------------------------------------------------
+# Certificats et clés privées
+# Les clés SSH appartiennent dans ~/.ssh/, pas dans ce dépôt.
+# -----------------------------------------------------------------------------
+*.pem
+*.p12
+id_rsa
+id_ed25519
+id_ecdsa
+*.key
+!*.key.example
+
+# -----------------------------------------------------------------------------
+# Tests, caches et artefacts TypeScript
+# -----------------------------------------------------------------------------
+coverage
+.turbo
+.cache
+*.tsbuildinfo
+
+# -----------------------------------------------------------------------------
+# Données lourdes ou générées (Business Review, exports, etc.)
+# Réimport / régénération via les scripts du dossier scripts/ si nécessaire.
+# -----------------------------------------------------------------------------
 data/
 scripts/data/
 dsp_cookie_sync_export.csv

@@ -362,6 +362,12 @@ export default function DSP() {
     return obj;
   };
 
+  /** Partner payloads expose both `contents` and `connector_contents`; they must stay identical. */
+  const syncContentsMirror = (connectorContents) => {
+    const cc = connectorContents && typeof connectorContents === 'object' ? connectorContents : {};
+    return { ...cc };
+  };
+
   const updateStatus = async (newStatus) => {
     if (!response?.data) {
         setError("No data loaded to update. Please execute a GET request first.");
@@ -895,6 +901,7 @@ export default function DSP() {
           currentConnectorContents[kind] = [contentKey];
         } else if (kind === 'AD_BANNER') {
           contentKey = 'AD_BANNER';
+          currentConnectorContents[kind] = ['AD_BANNER'];
         } else if (kind === 'AD_INSTREAM' || kind === 'AD_OUTSTREAM') {
           contentKey = 'VAST';
           currentConnectorContents[kind] = [contentKey];
@@ -913,6 +920,7 @@ export default function DSP() {
         ...currentData,
         partner_targeting: currentTargeting,
         connector_contents: currentConnectorContents,
+        contents: syncContentsMirror(currentConnectorContents),
         connector_adkind_billing_events: currentBillingEvents,
         LockVersion: (currentData.lock_version || 0) + 1
       };
@@ -1076,6 +1084,7 @@ export default function DSP() {
       const transformedData = {
         ...cleanedData,
         connector_contents: updatedConnectorContents,
+        contents: syncContentsMirror(updatedConnectorContents),
         LockVersion: (originalData.lock_version || 0) + 1
       };
 
@@ -1180,6 +1189,7 @@ export default function DSP() {
         ...cleanedData,
         partner_targeting: updatedTargeting,
         connector_contents: updatedConnectorContents,
+        contents: syncContentsMirror(updatedConnectorContents),
         connector_adkind_billing_events: updatedBillingEvents,
         LockVersion: (originalData.lock_version || 0) + 1
       };
