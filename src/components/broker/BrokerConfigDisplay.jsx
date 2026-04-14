@@ -25,7 +25,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   Edit3, Save, X, FileJson, Hash, Network, Tag, Globe, DollarSign, Settings, Loader2, 
-  Monitor, Smartphone, Tablet, Plus, Trash2, AlertTriangle, ArrowRightLeft, ChevronRight, MapPin, PlusCircle, MinusCircle, Link2
+  Monitor, Smartphone, Tablet, Plus, Trash2, AlertTriangle, ArrowRightLeft, MapPin, PlusCircle, MinusCircle, Link2,
+  Type, FileText, Target,
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from "@/components/ui/separator";
@@ -494,16 +495,18 @@ export default function BrokerConfigDisplay({ data, onUpdateName, onUpdateSeller
     // This section contains the JSX that renders the complete broker configuration interface
 
     return (
-        <Card className="border-slate-200 shadow-sm h-full">
+        <Card className="border-slate-200 shadow-sm h-full overflow-hidden rounded-lg">
             <CardContent className="space-y-8 pt-6">
                 {/* ===== BASIC INFORMATION SECTION ===== */}
-                {/* Displays and allows editing of basic broker information */}
+                {/* Same indigo strip as Edit Deal “General info” */}
                 {( !visibleSections || visibleSections.includes('general') ) && (
                 <div className="space-y-4" id="general">
-                    <div className="px-1 group flex items-center justify-between">
-                        <div className="font-semibold tracking-tight text-sm text-slate-800">General info</div>
-                        <ChevronRight className={`w-4 h-4 text-blue-700 transition-opacity ${visibleSections && visibleSections.includes('general') ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} />
-                    </div>
+                    <CardHeader className="flex flex-col space-y-1.5 px-6 py-3 bg-[rgb(59,76,164)] text-white rounded-t-lg mb-4 -mx-6 -mt-6">
+                        <CardTitle className="flex items-center gap-2 text-white text-base">
+                            <Type className="w-5 h-5 shrink-0" />
+                            General info
+                        </CardTitle>
+                    </CardHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {uid && (
                             <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200">
@@ -684,10 +687,12 @@ export default function BrokerConfigDisplay({ data, onUpdateName, onUpdateSeller
                 {/* Manages ad transformation settings (Native2Banner, Video2Banner, etc.) */}
                 {( !visibleSections || visibleSections.includes('contents') ) && (
                 <div className="space-y-4">
-                    <div className="px-1 group flex items-center justify-between">
-                        <div className="font-semibold tracking-tight text-sm text-slate-800">Contents</div>
-                        <ChevronRight className={`w-4 h-4 text-blue-700 transition-opacity ${visibleSections && visibleSections.includes('contents') ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} />
-                    </div>
+                    <CardHeader className="flex flex-col space-y-1.5 px-6 py-3 bg-[rgb(59,76,164)] text-white rounded-lg mb-4 -mx-6">
+                        <CardTitle className="flex items-center gap-2 text-white text-base">
+                            <FileText className="w-5 h-5 shrink-0" />
+                            Contents
+                        </CardTitle>
+                    </CardHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {Object.entries(ALL_AD_KINDS).map(([friendlyName, adKindConfig]) => {
                             const isCurrentlyActive = !!(contents && contents[adKindConfig.key]);
@@ -717,10 +722,12 @@ export default function BrokerConfigDisplay({ data, onUpdateName, onUpdateSeller
                 {/* Always show targeting section, even if empty */}
                 {( !visibleSections || visibleSections.includes('targeting') ) && (
                 <div className="space-y-6">
-                    <div className="px-1 group flex items-center justify-between">
-                        <div className="font-semibold tracking-tight text-sm text-slate-800">Targeting</div>
-                        <ChevronRight className={`w-4 h-4 text-blue-700 transition-opacity ${visibleSections && visibleSections.includes('targeting') ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} />
-                    </div>
+                    <CardHeader className="flex flex-col space-y-1.5 px-6 py-3 bg-[rgb(59,76,164)] text-white rounded-lg mb-4 -mx-6">
+                        <CardTitle className="flex items-center gap-2 text-white text-base">
+                            <Target className="w-5 h-5 shrink-0" />
+                            Targeting
+                        </CardTitle>
+                    </CardHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Devices */}
                         <div className="p-3 bg-white rounded-lg border border-slate-200 md:col-span-2">

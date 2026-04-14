@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Building2, Target, Menu, X, Zap, HandCoins, Network, LogOut, User, Globe, BarChart3, Plus, Clock, FileText, Megaphone, Gavel, Users, DollarSign, Monitor, ChevronRight, ChevronLeft, ChevronDown, Crown, Search, Layers, ArrowLeftRight, UserCog, Settings, Hammer, Server, History, Activity, Save, Loader2, RefreshCw, Link as LinkIcon, Link2, Globe2, TrendingUp, ShieldOff } from 'lucide-react';
+import { Building2, Target, Menu, X, Zap, HandCoins, Network, LogOut, User, Globe, BarChart3, Plus, Clock, FileText, Megaphone, Gavel, Users, DollarSign, Monitor, ChevronRight, ChevronLeft, ChevronDown, Crown, Search, Layers, ArrowLeftRight, UserCog, Settings, Hammer, Server, History, Activity, Loader2, RefreshCw, Link as LinkIcon, Link2, Globe2, TrendingUp, ShieldOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { authService } from '@/services/authService';
 import { clearCache, cachedFetch } from '@/utils/apiCache';
@@ -39,8 +39,6 @@ export default function Layout({ children, currentPageName }) {
     const [userData, setUserData] = useState(null);
     const [openSubMenu, setOpenSubMenu] = useState(null);
     const [isSubMenuClosing, setIsSubMenuClosing] = useState(false);
-    const [isDspSaving, setIsDspSaving] = useState(false);
-    const [dspHasPendingChanges, setDspHasPendingChanges] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
     
@@ -60,40 +58,6 @@ export default function Layout({ children, currentPageName }) {
         };
     }, [navigate, location.pathname]);
     
-    // Listen for DSP save status updates so we can reflect loading state in the header buttons
-    useEffect(() => {
-        if (typeof window === 'undefined') {
-            return;
-        }
-
-        const handleDspSaveStatus = (event) => {
-            if (event?.detail && typeof event.detail.saving === 'boolean') {
-                setIsDspSaving(event.detail.saving);
-            }
-        };
-
-        window.addEventListener('dspSaveStatus', handleDspSaveStatus);
-        return () => {
-            window.removeEventListener('dspSaveStatus', handleDspSaveStatus);
-        };
-    }, []);
-
-    useEffect(() => {
-        if (typeof window === 'undefined') {
-            return;
-        }
-
-        const handleDspPendingChanges = (event) => {
-            if (event?.detail && typeof event.detail.dirty === 'boolean') {
-                setDspHasPendingChanges(event.detail.dirty);
-            }
-        };
-
-        window.addEventListener('dspPendingChanges', handleDspPendingChanges);
-        return () => {
-            window.removeEventListener('dspPendingChanges', handleDspPendingChanges);
-        };
-    }, []);
 
     
     // Compute header titles based on current page
@@ -103,7 +67,7 @@ export default function Layout({ children, currentPageName }) {
 
         const dashboardPages = ['Dashboard', 'RealmDashboard', 'CompanyDashboard', 'SiteDashboard', 'PlacementDashboard', 'DSPDashboard', 'DealDashboard'];
         const supplyPages = ['Broker', 'Realm', 'Company', 'Site', 'Placement'];
-        const demandPages = ['DSPManagement', 'DSP', 'UserSyncManagement', 'EditUserSync', 'UserSync', 'BlockedCreativeManagement'];
+        const demandPages = ['DSPManagement', 'DSP', 'EditDSP', 'UserSyncManagement', 'EditUserSync', 'UserSync', 'BlockedCreativeManagement'];
         const builderPages = ['BuilderOperations', 'BuilderAdserver'];
         
         // Profitability pages
@@ -126,10 +90,16 @@ export default function Layout({ children, currentPageName }) {
             mainTitle = 'Monitoring';
             const item = (typeof dashboardSubItems !== 'undefined') ? dashboardSubItems.find(si => si.path === currentPageName) : null;
             if (item) subTitle = item.name;
+        } else if (currentPageName === 'Broker' || currentPageName === 'EditBroker') {
+            mainTitle = 'Supply';
+            subTitle = 'Edit Broker';
         } else if (supplyPages.includes(currentPageName)) {
             mainTitle = 'Supply';
             const item = (typeof supplySubItems !== 'undefined') ? supplySubItems.find(si => si.path === currentPageName) : null;
             if (item) subTitle = item.name;
+        } else if (currentPageName === 'DSP' || currentPageName === 'EditDSP') {
+            mainTitle = 'Demand';
+            subTitle = 'Edit DSP';
         } else if (demandPages.includes(currentPageName)) {
             mainTitle = 'Demand';
             const item = (typeof demandSubItems !== 'undefined') ? demandSubItems.find(si => si.path === currentPageName) : null;
@@ -153,13 +123,7 @@ export default function Layout({ children, currentPageName }) {
         return { mainTitle, subTitle };
     };
     
-    // Fire a custom event so the DSP page can handle the save logic
-    const triggerDspSaveFromHeader = () => {
-        if (typeof window === 'undefined') {
-            return;
-        }
-        window.dispatchEvent(new CustomEvent('dspGlobalSave'));
-    };
+
     
     // Clear cache and refresh dashboard
     const handleRefresh = () => {
@@ -1015,8 +979,8 @@ export default function Layout({ children, currentPageName }) {
                                     className={`flex flex-col items-center justify-center w-full py-5 rounded-lg transition-colors cursor-pointer group ${
                                         (item.name === 'Monitoring' && ((currentPageName === 'Dashboard' || currentPageName === 'RealmDashboard' || currentPageName === 'BrokerDashboard' || currentPageName === 'DSPDashboard' || currentPageName === 'DealDashboard' || currentPageName === 'SalesDashboard') || openSubMenu === 'Monitoring')) ||
                                         (item.name === 'Profitability' && currentPageName === 'Profitability') ||
-                                        (item.name === 'Supply' && ((currentPageName === 'Broker' ||  currentPageName === 'Realm' || currentPageName === 'Company' || currentPageName === 'Site' || currentPageName === 'Placement') || openSubMenu === 'Supply')) ||
-                                        (item.name === 'Demand' && (currentPageName === 'DSPManagement' || currentPageName === 'BlockedCreativeManagement' || openSubMenu === 'Demand')) ||
+                                        (item.name === 'Supply' && ((currentPageName === 'Broker' || currentPageName === 'EditBroker' ||  currentPageName === 'Realm' || currentPageName === 'Company' || currentPageName === 'Site' || currentPageName === 'Placement') || openSubMenu === 'Supply')) ||
+                                        (item.name === 'Demand' && (currentPageName === 'DSPManagement' || currentPageName === 'EditDSP' || currentPageName === 'DSP' || currentPageName === 'BlockedCreativeManagement' || openSubMenu === 'Demand')) ||
                                         (item.name === 'Manager' && openSubMenu === 'Manager') ||
                                         (item.name === 'Builder' && ((currentPageName === 'BuilderOperations' || currentPageName === 'BuilderAdserver') || openSubMenu === 'Builder'))
                                             ? 'text-[rgb(75,99,226)]'
@@ -1029,8 +993,8 @@ export default function Layout({ children, currentPageName }) {
                                     <div className={`${
                                         (item.name === 'Monitoring' && ((currentPageName === 'Dashboard' || currentPageName === 'RealmDashboard' || currentPageName === 'BrokerDashboard' || currentPageName === 'DSPDashboard' || currentPageName === 'DealDashboard' || currentPageName === 'SalesDashboard') || openSubMenu === 'Monitoring')) ||
                                         (item.name === 'Profitability' && currentPageName === 'Profitability') ||
-                                        (item.name === 'Supply' && ((currentPageName === 'Broker' ||  currentPageName === 'Realm' || currentPageName === 'Company' || currentPageName === 'Site' || currentPageName === 'Placement') || openSubMenu === 'Supply')) ||
-                                        (item.name === 'Demand' && (currentPageName === 'DSPManagement' || currentPageName === 'BlockedCreativeManagement' || openSubMenu === 'Demand')) ||
+                                        (item.name === 'Supply' && ((currentPageName === 'Broker' || currentPageName === 'EditBroker' ||  currentPageName === 'Realm' || currentPageName === 'Company' || currentPageName === 'Site' || currentPageName === 'Placement') || openSubMenu === 'Supply')) ||
+                                        (item.name === 'Demand' && (currentPageName === 'DSPManagement' || currentPageName === 'EditDSP' || currentPageName === 'DSP' || currentPageName === 'BlockedCreativeManagement' || openSubMenu === 'Demand')) ||
                                         (item.name === 'Manager' && openSubMenu === 'Manager') ||
                                         (item.name === 'Builder' && ((currentPageName === 'BuilderOperations' || currentPageName === 'BuilderAdserver') || openSubMenu === 'Builder'))
                                             ? 'text-[rgb(75,99,226)]' 
@@ -1185,8 +1149,9 @@ export default function Layout({ children, currentPageName }) {
                             )
                                     ))}
                             
-                        {openSubMenu === 'Supply' && supplySubItems.map((subItem) => (
-                            subItem.children ? (
+                        {openSubMenu === 'Supply' && supplySubItems.map((subItem) => {
+                            if (subItem.children) {
+                                return (
                                 <div key={subItem.name} className="space-y-2">
                                     <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 px-3">
                                         {subItem.icon}
@@ -1212,42 +1177,54 @@ export default function Layout({ children, currentPageName }) {
                                         ))}
                                     </div>
                                 </div>
-                            ) : (
+                                );
+                            }
+                            const isSupplySubActive =
+                                currentPageName === subItem.path ||
+                                (subItem.path === 'BrokerManagement' &&
+                                    (currentPageName === 'EditBroker' || currentPageName === 'Broker'));
+                            return (
                                             <Link
                                                 key={subItem.path}
                                                 to={createPageUrl(subItem.path)}
                                     onClick={() => setOpenSubMenu(null)}
                                     className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors group ${
-                                                    currentPageName === subItem.path
+                                                    isSupplySubActive
                                             ? 'bg-[rgb(75,99,226)]/10 text-[rgb(75,99,226)]'
                                             : 'text-slate-600 hover:bg-[rgb(40,62,173)] hover:text-white'
                                                 }`}
                                             >
-                                    <div className={`${currentPageName === subItem.path ? 'text-[rgb(75,99,226)]' : 'text-slate-400 group-hover:text-white'}`}>
+                                    <div className={`${isSupplySubActive ? 'text-[rgb(75,99,226)]' : 'text-slate-400 group-hover:text-white'}`}>
                                                 {subItem.icon}
                                     </div>
                                     <span>{subItem.name}</span>
                                             </Link>
-                                        )
-                                    ))}
+                                        );
+                                    })}
                             
-                        {openSubMenu === 'Demand' && demandSubItems.map((subItem) => (
+                        {openSubMenu === 'Demand' && demandSubItems.map((subItem) => {
+                            const isDemandSubActive =
+                                currentPageName === subItem.path ||
+                                (subItem.path === 'DSPManagement' &&
+                                    (currentPageName === 'EditDSP' || currentPageName === 'DSP'));
+                            return (
                                         <Link
                                             key={subItem.path}
                                             to={createPageUrl(subItem.path)}
                                 onClick={() => setOpenSubMenu(null)}
                                 className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors group ${
-                                                currentPageName === subItem.path
+                                                isDemandSubActive
                                         ? 'bg-[rgb(75,99,226)]/10 text-[rgb(75,99,226)]'
                                         : 'text-slate-600 hover:bg-[rgb(40,62,173)] hover:text-white'
                                             }`}
                                         >
-                                <div className={`${currentPageName === subItem.path ? 'text-[rgb(75,99,226)]' : 'text-slate-400 group-hover:text-white'}`}>
+                                <div className={`${isDemandSubActive ? 'text-[rgb(75,99,226)]' : 'text-slate-400 group-hover:text-white'}`}>
                                             {subItem.icon}
                                 </div>
                                 <span>{subItem.name}</span>
                                                                         </Link>
-                            ))}
+                            );
+                            })}
 
                         {openSubMenu === 'Builder' && builderSubItems.map((subItem) => {
                             const content = (
@@ -1358,32 +1335,6 @@ export default function Layout({ children, currentPageName }) {
                                     <span className="hidden sm:inline">{userData.FirstName && userData.LastName ? `${userData.FirstName} ${userData.LastName}` : (userData.Email || 'User')}</span>
                                     {renderUserBadges()}
                                 </div>
-                            )}
-                            {currentPageName === 'DSP' && (
-                                <>
-                                <Button
-                                    size="sm"
-                                    className="h-8 text-xs bg-[rgb(75,99,226)] hover:bg-[rgb(60,80,200)] text-white"
-                                    onClick={triggerDspSaveFromHeader}
-                                    disabled={isDspSaving}
-                                >
-                                    {isDspSaving ? (
-                                        <Loader2 className="w-4 h-4 animate-spin mr-1" />
-                                    ) : (
-                                        <Save className="w-4 h-4 mr-1" />
-                                    )}
-                                    {isDspSaving ? 'Saving...' : 'SAVE'}
-                                </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="h-8 text-xs"
-                                        onClick={handleRefresh}
-                                    >
-                                        <RefreshCw className="w-4 h-4 mr-1" />
-                                        Refresh
-                                    </Button>
-                                </>
                             )}
                         </div>
                         </div>
@@ -1662,8 +1613,8 @@ export default function Layout({ children, currentPageName }) {
                                                     className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                                                         (item.name === 'Monitoring' && ((currentPageName === 'Dashboard' || currentPageName === 'RealmDashboard' || currentPageName === 'BrokerDashboard' || currentPageName === 'DSPDashboard' || currentPageName === 'DealDashboard' || currentPageName === 'SalesDashboard') || openSubMenu === 'Monitoring')) ||
                                                         (item.name === 'Profitability' && openSubMenu === 'Profitability') ||
-                                                        (item.name === 'Supply' && ((currentPageName === 'Broker' ||  currentPageName === 'Realm' || currentPageName === 'Company' || currentPageName === 'Site' || currentPageName === 'Placement') || openSubMenu === 'Supply')) ||
-                                                        (item.name === 'Demand' && (currentPageName === 'DSPManagement' || currentPageName === 'BlockedCreativeManagement' || openSubMenu === 'Demand')) ||
+                                                        (item.name === 'Supply' && ((currentPageName === 'Broker' || currentPageName === 'EditBroker' ||  currentPageName === 'Realm' || currentPageName === 'Company' || currentPageName === 'Site' || currentPageName === 'Placement') || openSubMenu === 'Supply')) ||
+                                                        (item.name === 'Demand' && (currentPageName === 'DSPManagement' || currentPageName === 'EditDSP' || currentPageName === 'DSP' || currentPageName === 'BlockedCreativeManagement' || openSubMenu === 'Demand')) ||
                                                         (item.name === 'Manager' && openSubMenu === 'Manager') ||
                                                         (item.name === 'Builder' && ((currentPageName === 'BuilderOperations' || currentPageName === 'BuilderAdserver') || openSubMenu === 'Builder'))
                                                             ? 'bg-[rgb(75,99,226)]/10 text-[rgb(75,99,226)] border-l-4 border-[rgb(75,99,226)]'
@@ -1675,8 +1626,8 @@ export default function Layout({ children, currentPageName }) {
                                                 >
                                                     <div className={`${                                                        (item.name === 'Monitoring' && ((currentPageName === 'Dashboard' || currentPageName === 'RealmDashboard' || currentPageName === 'BrokerDashboard' || currentPageName === 'DSPDashboard' || currentPageName === 'DealDashboard' || currentPageName === 'SalesDashboard') || openSubMenu === 'Monitoring')) ||
                                                         (item.name === 'Profitability' && openSubMenu === 'Profitability') ||
-                                                        (item.name === 'Supply' && ((currentPageName === 'Broker' ||  currentPageName === 'Realm' || currentPageName === 'Company' || currentPageName === 'Site' || currentPageName === 'Placement') || openSubMenu === 'Supply')) ||
-                                                        (item.name === 'Demand' && (currentPageName === 'DSPManagement' || currentPageName === 'BlockedCreativeManagement' || openSubMenu === 'Demand')) ||
+                                                        (item.name === 'Supply' && ((currentPageName === 'Broker' || currentPageName === 'EditBroker' ||  currentPageName === 'Realm' || currentPageName === 'Company' || currentPageName === 'Site' || currentPageName === 'Placement') || openSubMenu === 'Supply')) ||
+                                                        (item.name === 'Demand' && (currentPageName === 'DSPManagement' || currentPageName === 'EditDSP' || currentPageName === 'DSP' || currentPageName === 'BlockedCreativeManagement' || openSubMenu === 'Demand')) ||
                                                         (item.name === 'Manager' && openSubMenu === 'Manager') ||
                                                         (item.name === 'Builder' && ((currentPageName === 'BuilderOperations' || currentPageName === 'BuilderAdserver') || openSubMenu === 'Builder'))
                                                             ? 'text-[rgb(75,99,226)]' 
@@ -1804,15 +1755,19 @@ export default function Layout({ children, currentPageName }) {
                                             )}
                                             
                                             {/* Show sub-menu for Supply */}
-                                            {item.name === 'Supply' && ((currentPageName === 'Broker' ||  currentPageName === 'Realm' || currentPageName === 'Company' || currentPageName === 'Site' || currentPageName === 'Placement') || openSubMenu === 'Supply') && (
+                                            {item.name === 'Supply' && ((currentPageName === 'Broker' || currentPageName === 'EditBroker' ||  currentPageName === 'Realm' || currentPageName === 'Company' || currentPageName === 'Site' || currentPageName === 'Placement') || openSubMenu === 'Supply') && (
                                                 <div className="ml-8 mt-2 space-y-1 animate-in slide-in-from-left duration-300 ease-out">
-                                                    {supplySubItems.map((subItem) => (
-                                                        subItem.path ? (
+                                                    {supplySubItems.map((subItem) => {
+                                                        const isSupplySubActive =
+                                                            currentPageName === subItem.path ||
+                                                            (subItem.path === 'BrokerManagement' &&
+                                                                (currentPageName === 'EditBroker' || currentPageName === 'Broker'));
+                                                        return subItem.path ? (
                                                         <Link
                                                             key={subItem.path}
                                                             to={createPageUrl(subItem.path)}
                                                             className={`flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium transition-colors ${
-                                                                currentPageName === subItem.path
+                                                                isSupplySubActive
                                                                     ? 'bg-[rgb(75,99,226)]/20 text-[rgb(75,99,226)]'
                                                                     : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
                                                             }`}
@@ -1831,20 +1786,25 @@ export default function Layout({ children, currentPageName }) {
                                                                 {subItem.icon}
                                                                 <span>{subItem.name}</span>
                                                             </div>
-                                                        )
-                                                    ))}
+                                                        );
+                                                    })}
                                                 </div>
                                             )}
                                             
                                             {/* Show sub-menu for Demand */}
-                                            {item.name === 'Demand' && (currentPageName === 'DSPManagement' || currentPageName === 'BlockedCreativeManagement' || openSubMenu === 'Demand') && (
+                                            {item.name === 'Demand' && (currentPageName === 'DSPManagement' || currentPageName === 'EditDSP' || currentPageName === 'DSP' || currentPageName === 'BlockedCreativeManagement' || openSubMenu === 'Demand') && (
                                                 <div className="ml-8 mt-2 space-y-1 animate-in slide-in-from-left duration-300 ease-out">
-                                                    {demandSubItems.map((subItem) => (
+                                                    {demandSubItems.map((subItem) => {
+                                                        const isDemandSubActive =
+                                                            currentPageName === subItem.path ||
+                                                            (subItem.path === 'DSPManagement' &&
+                                                                (currentPageName === 'EditDSP' || currentPageName === 'DSP'));
+                                                        return (
                                                         <Link
                                                             key={subItem.path}
                                                             to={createPageUrl(subItem.path)}
                                                             className={`flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium transition-colors ${
-                                                                currentPageName === subItem.path
+                                                                isDemandSubActive
                                                                     ? 'bg-[rgb(75,99,226)]/20 text-[rgb(75,99,226)]'
                                                                     : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
                                                             }`}
@@ -1855,7 +1815,8 @@ export default function Layout({ children, currentPageName }) {
                                                             {subItem.icon}
                                                             <span>{subItem.name}</span>
                                                         </Link>
-                                                    ))}
+                                                    );
+                                                    })}
                                                 </div>
                                             )}
                                             
@@ -2184,30 +2145,7 @@ export default function Layout({ children, currentPageName }) {
                         
                         {/* Right side: Controls based on page */}
                         <div className="flex items-center gap-3 flex-shrink-0">
-                        {currentPageName === 'DSP' ? (
-                            <>
-                            <Button
-                                onClick={triggerDspSaveFromHeader}
-                                disabled={isDspSaving}
-                                className="px-4 py-2 text-sm font-semibold text-white bg-[rgb(75,99,226)] hover:bg-[rgb(60,80,200)]"
-                            >
-                                {isDspSaving ? (
-                                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                ) : (
-                                    <Save className="w-4 h-4 mr-2" />
-                                )}
-                                {isDspSaving ? 'Saving...' : 'SAVE'}
-                            </Button>
-                                <Button
-                                    onClick={handleRefresh}
-                                    variant="outline"
-                                    className="px-4 py-2 text-sm font-semibold"
-                                >
-                                    <RefreshCw className="w-4 h-4 mr-2" />
-                                    Refresh
-                                </Button>
-                            </>
-                        ) : isDashboardPage() ? (
+                        {isDashboardPage() ? (
                             <div className="flex items-center gap-3">
                             <Button
                                 onClick={handleRefresh}

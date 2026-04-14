@@ -16,7 +16,7 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Network, Save, Loader2, Star, Zap, X, ChevronRight } from 'lucide-react';
+import { Save, Loader2, Star, Zap, X, Server } from 'lucide-react';
 import { Separator } from "@/components/ui/separator";
 
 export default function BrokerDataCenterSettings({ dataCenters, onUpdate, isSaving }) {
@@ -128,12 +128,14 @@ export default function BrokerDataCenterSettings({ dataCenters, onUpdate, isSavi
     }
 
     return (
-        <Card className="border-slate-200 shadow-sm">
-            <CardContent className="pt-4">
-                <div className="px-1 mb-2 group flex items-center justify-between">
-                    <div className="font-semibold tracking-tight text-sm text-slate-800">Data centers</div>
-                    <ChevronRight className={`w-4 h-4 text-blue-700 transition-opacity ${true ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} />
-                </div>
+        <Card className="border-slate-200 shadow-sm overflow-hidden rounded-lg">
+            <CardContent className="space-y-4 pt-6">
+                <CardHeader className="flex flex-col space-y-1.5 px-6 py-3 bg-[rgb(59,76,164)] text-white rounded-t-lg mb-4 -mx-6 -mt-6">
+                    <CardTitle className="flex items-center gap-2 text-white text-base">
+                        <Server className="w-5 h-5 shrink-0" />
+                        Data centers
+                    </CardTitle>
+                </CardHeader>
                 <div className="space-y-4">
                     {Object.entries(localDataCenters).map(([dcName, config], index) => (
                         <React.Fragment key={dcName}>

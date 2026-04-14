@@ -34,9 +34,9 @@ export default defineConfig({
           'utils-vendor': ['clsx', 'tailwind-merge', 'class-variance-authority'],
           // Séparer les pages principales
           'pages-placement': ['./src/pages/Placement/Placement.jsx'],
-          'pages-broker': ['./src/pages/broker/Broker.jsx'],
+          'pages-broker': ['./src/pages/Broker/EditBroker.jsx'],
           'pages-company': ['./src/pages/Company/Company.jsx'],
-          'pages-dsp': ['./src/pages/DSP/DSP.jsx'],
+          'pages-dsp': ['./src/pages/DSP/EditDSP.jsx'],
           'pages-deal': ['./src/pages/Deal/Deal.jsx']
         }
       }

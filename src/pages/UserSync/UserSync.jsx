@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  AlertCircle, Loader2, Hash, Type, Settings, Edit3, Check, X, Plus, Trash2, Save, Link2,
+  AlertCircle, Loader2, Hash, Type, Settings, Edit3, X, Plus, Trash2, Save, Link2,
   ChevronDown, ChevronUp, Shield, Radio, ListOrdered,
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -122,7 +122,8 @@ export function UserSyncPanel({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess] = useState("");
+  const [isSuccessVisible, setIsSuccessVisible] = useState(false);
   const [hasPending, setHasPending] = useState(false);
   const [riseCodeSyncOpen, setRiseCodeSyncOpen] = useState(false);
 
@@ -152,6 +153,23 @@ export function UserSyncPanel({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uid]);
 
+  // Auto-hide success message after 3s with fade (same as Edit Deal / Edit Placement)
+  useEffect(() => {
+    if (success) {
+      setIsSuccessVisible(true);
+      const fadeOutTimer = setTimeout(() => {
+        setIsSuccessVisible(false);
+      }, 2400);
+      const hideTimer = setTimeout(() => {
+        setSuccess("");
+      }, 3000);
+      return () => {
+        clearTimeout(fadeOutTimer);
+        clearTimeout(hideTimer);
+      };
+    }
+  }, [success]);
+
   const applyChange = (updater) => {
     setData(prev => { const next = structuredClone(prev); updater(next); return next; });
     setHasPending(true);
@@ -161,7 +179,7 @@ export function UserSyncPanel({
     if (!data) return;
     const token = getToken();
     if (!token) { setError('No authentication token'); return; }
-    setSaving(true); setError(null); setSuccess(false);
+    setSaving(true); setError(null); setSuccess("");
     try {
       const cleanEndpoint = (ep) => {
         const e = { ...ep };
@@ -193,8 +211,7 @@ export function UserSyncPanel({
       const json = await res.json();
       setData(json?.Data ?? json);
       setHasPending(false);
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
+      setSuccess("User sync updated successfully!");
     } catch (e) { setError(e.message); }
     finally { setSaving(false); }
   }, [data, getToken, uid]);
@@ -456,9 +473,10 @@ export function UserSyncPanel({
         </Alert>
       )}
       {success && (
-        <Alert className="border-green-200 bg-green-50 py-2">
-          <Check className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-800 text-xs">Saved successfully.</AlertDescription>
+        <Alert
+          className={`border-green-200 bg-green-50 transition-opacity duration-700 ${isSuccessVisible ? "opacity-100" : "opacity-0"}`}
+        >
+          <AlertDescription className="text-green-800 font-medium">{success}</AlertDescription>
         </Alert>
       )}
 

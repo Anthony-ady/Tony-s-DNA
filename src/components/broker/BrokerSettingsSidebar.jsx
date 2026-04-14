@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings, ArrowRightLeft, DollarSign, Save, Loader2, Bug, ChevronRight } from 'lucide-react';
+import { Settings, ArrowRightLeft, DollarSign, Save, Loader2, Bug } from 'lucide-react';
 import { Separator } from "@/components/ui/separator";
 
 export default function BrokerSettingsSidebar({ data, onUpdateSspConfig, onUpdateDebug, onUpdateVisitorKind, isSaving }) {
@@ -31,6 +31,10 @@ export default function BrokerSettingsSidebar({ data, onUpdateSspConfig, onUpdat
     }, [data]);
 
     if (!data) return null;
+
+    /** Edit Deal–style indigo strip; first block aligns to card top */
+    const purpleSectionHeader = (isFirst) =>
+        `flex flex-col space-y-1.5 px-6 py-3 bg-[rgb(59,76,164)] text-white mb-4 -mx-6 ${isFirst ? '-mt-6 rounded-t-lg' : 'rounded-lg'}`;
 
     const debug = data?.debug;
     const isDebugEnabled = debug?.LogLevel === "VERBOSE";
@@ -109,16 +113,18 @@ export default function BrokerSettingsSidebar({ data, onUpdateSspConfig, onUpdat
     };
 
     return (
-        <Card className="border-slate-200 shadow-sm" id="ssp-config">
+        <Card className="border-slate-200 shadow-sm overflow-hidden rounded-lg" id="ssp-config">
             <CardContent className="space-y-6 pt-6">
                 {/* Debug Configuration Section */}
                 {debug && (
                     <>
                     <div className="space-y-3">
-                        <div className="px-1 group flex items-center justify-between">
-                            <div className="font-semibold tracking-tight text-sm text-slate-800">Debug</div>
-                            <ChevronRight className={`w-4 h-4 text-blue-700 transition-opacity ${true ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} />
-                        </div>
+                        <CardHeader className={purpleSectionHeader(true)}>
+                            <CardTitle className="flex items-center gap-2 text-white text-base">
+                                <Bug className="w-5 h-5 shrink-0" />
+                                Debug
+                            </CardTitle>
+                        </CardHeader>
                         <div className="space-y-3 pl-2">
                             <div className="flex items-center justify-between p-3 rounded-lg bg-white border border-slate-200">
                                 <div className="flex-1">
@@ -164,10 +170,12 @@ export default function BrokerSettingsSidebar({ data, onUpdateSspConfig, onUpdat
 
                 {/* Matching Table Host Section */}
                 <div className="space-y-3">
-                    <div className="px-1 group flex items-center justify-between">
-                        <div className="font-semibold tracking-tight text-sm text-slate-800">Matching Table Host</div>
-                        <ChevronRight className={`w-4 h-4 text-blue-700 transition-opacity ${true ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} />
-                    </div>
+                    <CardHeader className={purpleSectionHeader(!debug)}>
+                        <CardTitle className="flex items-center gap-2 text-white text-base">
+                            <ArrowRightLeft className="w-5 h-5 shrink-0" />
+                            Matching Table Host
+                        </CardTitle>
+                    </CardHeader>
                     <div className="space-y-3 pl-2">
                         <div className="p-3 rounded-lg bg-white border border-slate-200">
                             <Select
@@ -198,10 +206,12 @@ export default function BrokerSettingsSidebar({ data, onUpdateSspConfig, onUpdat
 
                 {/* SSP Configuration Section */}
                 <div className="space-y-3">
-                    <div className="px-1 group flex items-center justify-between">
-                        <div className="font-semibold tracking-tight text-sm text-slate-800">SSP Configuration</div>
-                        <ChevronRight className={`w-4 h-4 text-blue-700 transition-opacity ${true ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} />
-                    </div>
+                    <CardHeader className={purpleSectionHeader(false)}>
+                        <CardTitle className="flex items-center gap-2 text-white text-base">
+                            <Settings className="w-5 h-5 shrink-0" />
+                            SSP Configuration
+                        </CardTitle>
+                    </CardHeader>
                     <div className="space-y-3">
                         {/* <ToggleSwitch label="Enabled" description="Enable SSP configuration" settingKey="enabled" /> REMOVED */}
                         <ToggleSwitch label="Creative scan" description="Enable creative scanning" settingKey="creativeScan" />

@@ -8,7 +8,6 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Edit3, Check, X, Loader2, GitBranch, Code, Scan, Shield, Settings, ChevronRight, Link2, Plus, RefreshCw } from 'lucide-react';
-import * as SliderPrimitive from "@radix-ui/react-slider";
 import FeesEditor from './FeesEditor';
 import { apiUrl, API_ENDPOINTS } from '@/config/api';
 import { authService } from '@/services/authService';
@@ -290,74 +289,65 @@ const JsonEditor = ({ label, value, onSave, isSaving: isParentSaving }) => {
     );
 };
 
+/** Percent 0–100 for Creative Scan UI: preserve small values (e.g. 0.001) instead of rounding to one decimal. */
+function formatCreativeScanPercentLabel(percent) {
+    const n = Number(percent);
+    if (!Number.isFinite(n)) return '0';
+    return String(parseFloat(n.toFixed(6)));
+}
+
 const CreativeScanEditor = ({ value, onSave, isSaving: isParentSaving }) => {
     const [isEnabled, setIsEnabled] = useState(value?.allow_creative_scan || false);
-    const [ratio, setRatio] = useState((value?.creative_scan_ratio || 0.0) * 100); // Store as percentage
-    const [isEditingRatio, setIsEditingRatio] = useState(false);
-    const [ratioInput, setRatioInput] = useState('');
+    const [ratio, setRatio] = useState((value?.creative_scan_ratio || 0.0) * 100); // percent 0–100
+    const [percentText, setPercentText] = useState(() =>
+        formatCreativeScanPercentLabel((value?.creative_scan_ratio ?? 0) * 100)
+    );
+
+    useEffect(() => {
+        setIsEnabled(value?.allow_creative_scan || false);
+        const r = (value?.creative_scan_ratio ?? 0) * 100;
+        setRatio(r);
+        setPercentText(formatCreativeScanPercentLabel(r));
+    }, [value?.allow_creative_scan, value?.creative_scan_ratio]);
+
+    const commitRatio = async (nextPercent, { save = true } = {}) => {
+        const next = parseFloat(Number(nextPercent).toFixed(6));
+        if (!Number.isFinite(next) || next < 0 || next > 100) return;
+        setRatio(next);
+        setPercentText(formatCreativeScanPercentLabel(next));
+        if (save && isEnabled) {
+            await onSave(isEnabled, next / 100);
+        }
+    };
 
     const handleToggleChange = async (newEnabled) => {
         setIsEnabled(newEnabled);
-        // Auto-save when toggling
         await onSave(newEnabled, ratio / 100);
     };
 
-    const handleRatioChange = async (newValue) => {
-        const percentageValue = newValue[0];
-        setRatio(percentageValue);
-        if (isEnabled) {
-            // Auto-save when slider changes
-            await onSave(isEnabled, percentageValue / 100);
-        }
+    const handlePercentInputChange = (e) => {
+        setPercentText(e.target.value);
     };
 
-    const handleDecrement = async () => {
-        const newValue = Math.max(0, ratio - 0.1);
-        setRatio(newValue);
-        if (isEnabled) {
-            await onSave(isEnabled, newValue / 100);
-        }
-    };
-
-    const handleIncrement = async () => {
-        const newValue = Math.min(100, ratio + 0.1);
-        setRatio(newValue);
-        if (isEnabled) {
-            await onSave(isEnabled, newValue / 100);
-        }
-    };
-
-    const handleRatioInputChange = (e) => {
-        setRatioInput(e.target.value);
-    };
-
-    const handleRatioInputBlur = async () => {
-        const numValue = parseFloat(ratioInput);
+    const handlePercentInputBlur = async () => {
+        const raw = String(percentText).trim().replace(',', '.');
+        const numValue = parseFloat(raw);
         if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
-            setRatio(numValue);
-            if (isEnabled) {
-                await onSave(isEnabled, numValue / 100);
-            }
+            await commitRatio(numValue);
         } else {
-            setRatioInput(ratio.toFixed(1));
+            setPercentText(formatCreativeScanPercentLabel(ratio));
         }
-        setIsEditingRatio(false);
     };
 
-    const handleRatioInputKeyDown = (e) => {
+    const handlePercentInputKeyDown = (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            handleRatioInputBlur();
+            e.target.blur();
         }
         if (e.key === 'Escape') {
-            setRatioInput(ratio.toFixed(1));
-            setIsEditingRatio(false);
+            setPercentText(formatCreativeScanPercentLabel(ratio));
+            e.target.blur();
         }
-    };
-
-    const startEditingRatio = () => {
-        setRatioInput(ratio.toFixed(1));
-        setIsEditingRatio(true);
     };
 
     return (
@@ -382,63 +372,23 @@ const CreativeScanEditor = ({ value, onSave, isSaving: isParentSaving }) => {
             </div>
             {isEnabled && (
                 <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8 shrink-0"
-                            onClick={handleDecrement}
-                            disabled={isParentSaving || ratio <= 0}
-                        >
-                            <span className="text-sm">-</span>
-                        </Button>
-                        <SliderPrimitive.Root
-                            value={[ratio]}
-                            onValueChange={handleRatioChange}
-                            max={100}
-                            min={0}
-                            step={0.1}
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <Input
+                            type="text"
+                            inputMode="decimal"
+                            autoComplete="off"
+                            value={percentText}
+                            onChange={handlePercentInputChange}
+                            onBlur={handlePercentInputBlur}
+                            onKeyDown={handlePercentInputKeyDown}
                             disabled={isParentSaving}
-                            className="relative flex w-full touch-none select-none items-center flex-1"
-                        >
-                            <SliderPrimitive.Track className="relative h-1.5 w-full grow overflow-hidden rounded-full bg-slate-200">
-                                <SliderPrimitive.Range className="absolute h-full bg-blue-600" />
-                            </SliderPrimitive.Track>
-                            <SliderPrimitive.Thumb className="block h-4 w-4 rounded-full border-2 border-blue-600 bg-blue-600 shadow transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50" />
-                        </SliderPrimitive.Root>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8 shrink-0"
-                            onClick={handleIncrement}
-                            disabled={isParentSaving || ratio >= 100}
-                        >
-                            <span className="text-sm">+</span>
-                        </Button>
-                        {isEditingRatio ? (
-                            <Input
-                                type="number"
-                                step="0.1"
-                                min="0"
-                                max="100"
-                                value={ratioInput}
-                                onChange={handleRatioInputChange}
-                                onBlur={handleRatioInputBlur}
-                                onKeyDown={handleRatioInputKeyDown}
-                                className="w-20 text-center font-semibold text-slate-900"
-                                autoFocus
-                            />
-                        ) : (
-                            <div 
-                                className="bg-white border border-slate-300 rounded px-3 py-1.5 min-w-[60px] text-center font-semibold text-slate-900 cursor-pointer hover:bg-slate-50"
-                                onClick={startEditingRatio}
-                                title="Click to edit"
-                            >
-                                {ratio.toFixed(1)}%
-                        </div>
-                        )}
+                            className="max-w-[160px] text-center font-semibold text-slate-900 tabular-nums"
+                            title="0–100 (e.g. 0.001 or 5)"
+                        />
+                        <span className="text-sm font-medium text-slate-600">%</span>
+                        <span className="text-[11px] text-slate-500">
+                            0–100, decimals allowed (e.g. 0.001).
+                        </span>
                     </div>
                 </div>
             )}

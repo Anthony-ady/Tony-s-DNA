@@ -554,7 +554,7 @@ export default function BrokerManagement() {
                       <td className="p-3 font-medium text-slate-900 text-sm">
                         <div 
                           className="flex flex-col cursor-pointer hover:text-[rgb(75,99,226)] transition-colors"
-                          onClick={() => navigate(`/Broker?id=${broker.id}&name=${encodeURIComponent(broker.name)}`)}
+                          onClick={() => navigate(`/EditBroker?id=${broker.id}&name=${encodeURIComponent(broker.name)}`)}
                         >
                           <div>{broker.name}</div>
                           <div className="text-xs text-slate-400 font-mono">{broker.id}</div>
@@ -586,7 +586,7 @@ export default function BrokerManagement() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => navigate(`/Broker?id=${broker.id}&name=${encodeURIComponent(broker.name)}`)}
+                            onClick={() => navigate(`/EditBroker?id=${broker.id}&name=${encodeURIComponent(broker.name)}`)}
                             className="h-8 w-8 p-0"
                             title="Edit Broker"
                           >

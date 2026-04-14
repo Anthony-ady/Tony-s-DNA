@@ -36,7 +36,7 @@ const RealmAnalytics = lazy(() => import("./Realm/RealmAnalytics"));
 const EditRealm = lazy(() => import("./Realm/EditRealm"));
 
 // DSP pages
-const DSP = lazy(() => import("./DSP/DSP"));
+const EditDSP = lazy(() => import("./DSP/EditDSP"));
 const DSPManagement = lazy(() => import("./DSP/DSPManagement"));
 const DSPDashboard = lazy(() => import("./DSP/DSPDashboard.jsx"));
 const DSPAnalytics = lazy(() => import("./DSP/DSPAnalytics"));
@@ -49,7 +49,7 @@ const UserManagement = lazy(() => import("./User/UserManagement"));
 const EditUser = lazy(() => import("./User/EditUser"));
 
 // Broker pages
-const Broker = lazy(() => import("./Broker/Broker.jsx"));
+const EditBroker = lazy(() => import("./Broker/EditBroker.jsx"));
 const BrokerManagement = lazy(() => import("./Broker/BrokerManagement.jsx"));
 const BrokerAnalytics = lazy(() => import("./Broker/BrokerAnalytics.jsx"));
 const CreateBroker = lazy(() => import("./Broker/CreateBroker.jsx"));
@@ -97,14 +97,16 @@ const PAGES = {
     RealmAnalytics: RealmAnalytics,
     
     // DSP pages
-    DSP: DSP,
+    EditDSP: EditDSP,
+    DSP: EditDSP,
     DSPManagement: DSPManagement,
     DSPDashboard: DSPDashboard,
     DSPAnalytics: DSPAnalytics,
     CreateDSP: CreateDSP,
     
     // Broker pages
-    Broker: Broker,
+    EditBroker: EditBroker,
+    Broker: EditBroker,
     BrokerManagement: BrokerManagement,
     BrokerAnalytics: BrokerAnalytics,
     CreateBroker: CreateBroker,
@@ -186,7 +188,8 @@ function PagesContent() {
                             <Route path="/DSPProfitability" element={<DSPProfitability />} />
                             <Route path="/DealDashboard" element={<DealDashboard />} />
                             <Route path="/SalesDashboard" element={<SalesDashboard />} />
-                            <Route path="/Broker" element={<Broker />} />
+                            <Route path="/EditBroker" element={<EditBroker />} />
+                            <Route path="/Broker" element={<EditBroker />} />
                             <Route path="/BrokerManagement" element={<BrokerManagement />} />
                             <Route path="/BrokerAnalytics" element={<BrokerAnalytics />} />
                             <Route path="/CreateBroker" element={<CreateBroker />} />
@@ -206,7 +209,8 @@ function PagesContent() {
                             <Route path="/CompanyDashboard" element={<CompanyDashboard />} />
                             <Route path="/CompanyAnalytics" element={<CompanyAnalytics />} />
                             <Route path="/EditCompany" element={<EditCompany />} />
-                            <Route path="/DSP" element={<DSP />} />
+                            <Route path="/EditDSP" element={<EditDSP />} />
+                            <Route path="/DSP" element={<EditDSP />} />
                             <Route path="/Deal" element={<Deal />} />
                             <Route path="/DealAnalytics" element={<DealAnalytics />} />
                             <Route path="/EditDeal" element={<EditDeal />} />

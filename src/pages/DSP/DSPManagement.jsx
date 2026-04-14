@@ -537,7 +537,7 @@ export default function DSPManagement() {
                         <div className="flex flex-col">
                           <div 
                             className="cursor-pointer hover:text-[rgb(75,99,226)] transition-colors"
-                            onClick={() => navigate(`/DSP?id=${dsp.id}&name=${encodeURIComponent(dsp.name)}`)}
+                            onClick={() => navigate(`/EditDSP?id=${dsp.id}&name=${encodeURIComponent(dsp.name)}`)}
                           >
                             {dsp.name}
                           </div>
@@ -582,7 +582,7 @@ export default function DSPManagement() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => navigate(`/DSP?id=${dsp.id}&name=${encodeURIComponent(dsp.name)}`)}
+                            onClick={() => navigate(`/EditDSP?id=${dsp.id}&name=${encodeURIComponent(dsp.name)}`)}
                             className="h-8 w-8 p-0"
                             title="Edit DSP"
                           >

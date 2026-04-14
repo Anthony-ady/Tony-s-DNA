@@ -26,31 +26,42 @@
  * - Auto-execution when partner ID is provided via URL
  */
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { apiUrl } from "@/config/api";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Play,
   AlertCircle,
   Loader2,
-  Zap,
-  ArrowLeft
+  Monitor,
+  Type,
+  Package,
+  Link2,
+  Settings,
+  Target,
+  Ban,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { EditEntityPageLayout } from "@/components/layouts/EditEntityPageLayout";
 
-import DspRequestForm from "../../components/dsp/DspRequestForm";
 import DspConfigDisplay from "../../components/dsp/DspConfigDisplay";
 import DspAdvancedSettingsSidebar from "../../components/dsp/DspAdvancedSettingsSidebar";
 import DspInventoryAccessSidebar from "../../components/dsp/DspInventoryAccessSidebar";
-import DspSectionNav from "../../components/dsp/DspSectionNav";
 import DspBlockCreative from "../../components/dsp/DspBlockCreative";
 
+const DSP_EDIT_SECTIONS = [
+  { id: "basic", label: "Basic info", icon: <Type className="w-4 h-4" /> },
+  { id: "inventory", label: "Inventory Access", icon: <Package className="w-4 h-4" /> },
+  { id: "endpoints", label: "Partner Endpoints", icon: <Link2 className="w-4 h-4" /> },
+  { id: "advanced", label: "Advanced Settings", icon: <Settings className="w-4 h-4" /> },
+  { id: "targeting", label: "Targeting", icon: <Target className="w-4 h-4" /> },
+  { id: "block-creative", label: "Block Creative", icon: <Ban className="w-4 h-4" /> },
+];
 
-export default function DSP() {
+export default function EditDSP() {
   // Authentication hook - provides access to user token and validation
   const { getToken, validateToken } = useAuth();
   
@@ -67,6 +78,9 @@ export default function DSP() {
   const [responseTime, setResponseTime] = useState(null);
   const [selectedSection, setSelectedSection] = useState('basic');
   const [hasPendingChanges, setHasPendingChanges] = useState(false);
+  const [dspSaveInFlight, setDspSaveInFlight] = useState(false);
+  const [success, setSuccess] = useState("");
+  const [isSuccessVisible, setIsSuccessVisible] = useState(false);
   const saveHandlerRef = useRef(null);
   const responseRef = useRef(null);
   /** Preserve cookie_sync_ids from GET so we never send [] by mistake if state was overwritten */
@@ -99,8 +113,9 @@ export default function DSP() {
     return authToken.trim() || getToken();
   };
 
-  // Broadcast save status updates so the layout header can reflect the loading state
+  // Broadcast save status updates (legacy listeners) and drive sidebar Save spinner
   const emitSaveStatus = (saving) => {
+    setDspSaveInFlight(saving);
     if (typeof window === 'undefined') return;
     window.dispatchEvent(new CustomEvent('dspSaveStatus', { detail: { saving } }));
   };
@@ -1539,6 +1554,7 @@ export default function DSP() {
 
     setLoading(true);
     setError(null);
+    setSuccess("");
     emitSaveStatus(true);
 
     try {
@@ -1586,6 +1602,7 @@ export default function DSP() {
         data: updatedData ?? prev.data
       }));
       clearPendingChanges();
+      setSuccess("DSP updated successfully!");
     } catch (err) {
       setError(`Error saving DSP configuration: ${err.message}`);
     } finally {
@@ -1613,19 +1630,66 @@ export default function DSP() {
     };
   }, []);
 
+  // Auto-hide success message after 3s with fade (same as Edit Deal / Edit Placement)
+  useEffect(() => {
+    if (success) {
+      setIsSuccessVisible(true);
+      const fadeOutTimer = setTimeout(() => {
+        setIsSuccessVisible(false);
+      }, 2400);
+      const hideTimer = setTimeout(() => {
+        setSuccess("");
+      }, 3000);
+      return () => {
+        clearTimeout(fadeOutTimer);
+        clearTimeout(hideTimer);
+      };
+    }
+  }, [success]);
+
   // Get the DSP name from URL params or from response data
   const dspNameFromUrl = searchParams.get('name');
   const dspName = response?.data?.name || dspNameFromUrl || 'DSP Configuration';
-  
-  // Get initials for the DSP name
-  const getDspInitials = (name) => {
-    if (!name) return 'DSP';
-    const words = name.split('_');
-    if (words.length >= 2) {
-      return words.slice(0, 2).map(w => w[0]).join('').toUpperCase();
+
+  const displayName = dspNameFromUrl?.trim()
+    ? decodeURIComponent(dspNameFromUrl)
+    : dspName;
+  const truncatedTitle =
+    displayName.length > 42 ? `${displayName.slice(0, 42)}…` : displayName;
+
+  const partnerIdFromUrl = searchParams.get('id')?.trim();
+
+  const sectionsWithDisabled = useMemo(
+    () =>
+      DSP_EDIT_SECTIONS.map((s) => ({
+        ...s,
+        disabled: !response?.data,
+      })),
+    [response?.data]
+  );
+
+  const layoutAlerts = useMemo(() => {
+    const list = [];
+    if (error) {
+      list.push(
+        <Alert key="dsp-error" variant="destructive" className="mb-6 border-red-200 bg-red-50">
+          <AlertCircle className="h-5 w-5" />
+          <AlertDescription className="text-red-800 font-medium">{error}</AlertDescription>
+        </Alert>
+      );
     }
-    return name.substring(0, 2).toUpperCase();
-  };
+    if (success) {
+      list.push(
+        <Alert
+          key="dsp-success"
+          className={`border-green-200 bg-green-50 transition-opacity duration-700 ${isSuccessVisible ? "opacity-100" : "opacity-0"}`}
+        >
+          <AlertDescription className="text-green-800 font-medium">{success}</AlertDescription>
+        </Alert>
+      );
+    }
+    return list;
+  }, [error, success, isSuccessVisible]);
 
   const SectionFallback = ({ title }) => (
     <Card className="border-slate-200 shadow-lg h-full">
@@ -1636,25 +1700,38 @@ export default function DSP() {
     </Card>
   );
 
-  return (
-    <div className="bg-slate-50">
-      <div className="max-w-7xl mx-auto p-6 lg:p-8">
-        {/* Horizontal Navigation */}
-        {response && (
-          <DspSectionNav currentSection={selectedSection} onSelect={setSelectedSection} horizontal={true} />
-        )}
-        
-        {/* Main Content */}
-        <div className="space-y-6">
-            {error && (
-              <Alert variant="destructive" className="mb-6 border-red-200 bg-red-50">
-                <AlertCircle className="h-5 w-5" />
-                <AlertDescription className="text-red-800 font-medium">
-                  {error}
-                </AlertDescription>
-              </Alert>
-            )}
+  if (!partnerIdFromUrl) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-8">
+        <div className="text-center max-w-md">
+          <AlertCircle className="w-8 h-8 text-amber-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-slate-900 mb-2">No DSP selected</h2>
+          <p className="text-slate-600 mb-4">Open a DSP from the list to edit it.</p>
+          <Button variant="outline" onClick={() => navigate("/DSPManagement")}>
+            Back to DSP Management
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
+  return (
+    <EditEntityPageLayout
+      sections={sectionsWithDisabled}
+      selectedSection={selectedSection}
+      onSectionSelect={setSelectedSection}
+      sectionCardTitle="General Parameters"
+      headerIcon={<Monitor className="w-7 h-7" />}
+      title={truncatedTitle}
+      titleTooltip={displayName}
+      subtitle="Edit DSP configuration"
+      onSave={performGlobalSave}
+      onCancel={() => navigate("/DSPManagement")}
+      saving={dspSaveInFlight}
+      saveDisabled={!hasPendingChanges || !response?.data}
+      alerts={layoutAlerts}
+    >
+      <div className="space-y-6">
             {loading && !response && (
               <Card className="border-slate-200 shadow-lg h-full">
                 <CardContent className="flex items-center justify-center h-full py-16">
@@ -1825,8 +1902,7 @@ export default function DSP() {
                 </CardContent>
               </Card>
             )}
-        </div>
       </div>
-    </div>
+    </EditEntityPageLayout>
   );
 }
