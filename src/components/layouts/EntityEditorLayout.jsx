@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { TAILWIND_CLASSES } from "@/config/theme";
+import { TAILWIND_CLASSES } from '@/config/theme';
 
 const EntityEditorLayout = ({
   backAction,
@@ -38,11 +38,22 @@ const EntityEditorLayout = ({
           <div className="lg:col-span-1">
             <div className="lg:sticky lg:top-6 space-y-6">
               {sections.length > 0 && (
-                <Card className="border-slate-200 shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-sm text-slate-800">{sectionCardTitle}</CardTitle>
+                <Card className="border-slate-200 shadow-sm border-[rgb(220,227,255)]/90 overflow-hidden">
+                  <CardHeader
+                    className={cn(
+                      TAILWIND_CLASSES.editSidebarSectionHeader,
+                      "p-4"
+                    )}
+                  >
+                    <CardTitle className={TAILWIND_CLASSES.editSidebarSectionTitle}>
+                      {sectionCardTitle}
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-1">
+                  <CardContent
+                    className={cn(
+                      "space-y-1 px-4 pb-4 pt-[20px]"
+                    )}
+                  >
                     {sections.map((section) => (
                       <Button
                         key={section.id}

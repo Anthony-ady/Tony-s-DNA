@@ -30,11 +30,17 @@ export const API_ENDPOINTS = {
   SITES_SEARCH: `${API_BASE_URL}/sites/search`,
   PLACEMENTS_SEARCH: `${API_BASE_URL}/placements/search`,
   PARTNERS_SEARCH: `${API_BASE_URL}/partners/search`,
+  /** Seats for a partner (POST, filter PartnerUid match). */
+  SEATS_SEARCH: `${API_BASE_URL}/seats/search`,
   BROKER_PARTNERS_SEARCH: `${API_BASE_URL}/broker_partners/search`,
   COOKIE_SYNC_SEARCH: `${API_BASE_URL}/cookie_sync/search`,
   BLOCKED_CREATIVE_SEARCH: `${API_BASE_URL}/blocked_creative/search`,
 
+  /** GeoNames-backed country / region search (POST JSON body). */
+  GEO_SEARCH: `${API_BASE_URL}/geo/search`,
 
+  /** BCP-47 style codes → English display names (GET, JSON Data map). */
+  LANGUAGES: `${API_BASE_URL}/languages`,
 };
 
 /** Build URL for entity by ID */
@@ -48,4 +54,5 @@ export const apiUrl = {
   brokerPartner: (id) => `${API_BASE_URL}/broker_partners/${id}`,
   cookieSync: (id) => `${API_BASE_URL}/cookie_sync/${id}`,
   user: (id) => `${API_BASE_URL}/users/${id}`,
+  seat: (id) => `${API_BASE_URL}/seats/${id}`,
 };

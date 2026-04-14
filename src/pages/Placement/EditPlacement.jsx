@@ -17,6 +17,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../compo
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../../components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover';
 import { cn } from '@/lib/utils';
+import { TAILWIND_CLASSES } from '@/config/theme';
 import { API_ENDPOINTS, apiUrl } from '@/config/api';
 import EntityEditorLayout from '@/components/layouts/EntityEditorLayout';
 import creativeScanPolicies from '../Realm/creative-scan-policies.json';
@@ -612,7 +613,7 @@ const EditPlacement = () => {
                 <Button
                   onClick={handleSave}
                   disabled={saving}
-                  className="w-full bg-slate-600 hover:bg-slate-700 text-white"
+                  className={cn(TAILWIND_CLASSES.editPrimaryButton)}
                 >
                   {saving ? (
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -624,7 +625,7 @@ const EditPlacement = () => {
                 <Button
                   variant="outline"
                   onClick={() => navigate('/Placement')}
-                  className="w-full hover:bg-slate-50 hover:border-slate-300"
+                  className={cn(TAILWIND_CLASSES.editCancelButton)}
                 >
                   <X className="w-4 h-4 mr-2" />
                   Cancel
@@ -637,7 +638,7 @@ const EditPlacement = () => {
           <div className="bg-gradient-to-r from-white via-[rgb(244,246,255)] to-white border border-[rgb(220,227,255)] shadow-sm rounded-2xl p-6">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div className="flex items-start gap-4">
-                <div className="w-14 h-14 rounded-xl bg-[rgb(59,76,164)]/10 text-[rgb(59,76,164)] flex items-center justify-center">
+                <div className={cn('w-14 h-14 rounded-xl flex items-center justify-center', TAILWIND_CLASSES.editIconBox)}>
                   <Target className="w-7 h-7" />
           </div>
                 <div className="space-y-1">

@@ -42,7 +42,7 @@ const DSPDashboard = lazy(() => import("./DSP/DSPDashboard.jsx"));
 const DSPAnalytics = lazy(() => import("./DSP/DSPAnalytics"));
 const CreateDSP = lazy(() => import("./DSP/CreateDSP"));
 const UserSyncManagement = lazy(() => import("./UserSync/UserSyncManagement"));
-const UserSync = lazy(() => import("./UserSync/UserSync"));
+const EditUserSync = lazy(() => import("./UserSync/EditUserSync"));
 const BlockedCreativeManagement = lazy(() => import("./BlockedCreative/BlockedCreativeManagement"));
 const CreateBlockedCreative = lazy(() => import("./BlockedCreative/CreateBlockedCreative.jsx"));
 const UserManagement = lazy(() => import("./User/UserManagement"));
@@ -119,7 +119,8 @@ const PAGES = {
 
     // User Sync pages
     UserSyncManagement: UserSyncManagement,
-    UserSync: UserSync,
+    EditUserSync: EditUserSync,
+    UserSync: EditUserSync,
     // Blocked Creatives
     BlockedCreativeManagement: BlockedCreativeManagement,
     CreateBlockedCreative: CreateBlockedCreative,
@@ -191,7 +192,8 @@ function PagesContent() {
                             <Route path="/CreateBroker" element={<CreateBroker />} />
                             <Route path="/DSPManagement" element={<DSPManagement />} />
                             <Route path="/UserSyncManagement" element={<UserSyncManagement />} />
-                            <Route path="/UserSync" element={<UserSync />} />
+                            <Route path="/EditUserSync" element={<EditUserSync />} />
+                            <Route path="/UserSync" element={<EditUserSync />} />
                             <Route path="/BlockedCreativeManagement" element={<BlockedCreativeManagement />} />
                             <Route path="/CreateBlockedCreative" element={<CreateBlockedCreative />} />
                             <Route path="/UserManagement" element={<UserManagement />} />

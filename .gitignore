@@ -61,8 +61,8 @@ coverage
 
 # -----------------------------------------------------------------------------
 # Données lourdes ou générées (Business Review, exports, etc.)
-# Réimport / régénération via les scripts du dossier scripts/ si nécessaire.
+# Dossier scripts/ ignoré (utilitaires locaux, hors dépôt).
 # -----------------------------------------------------------------------------
 data/
-scripts/data/
+scripts/
 dsp_cookie_sync_export.csv

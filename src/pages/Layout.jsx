@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -105,7 +103,7 @@ export default function Layout({ children, currentPageName }) {
 
         const dashboardPages = ['Dashboard', 'RealmDashboard', 'CompanyDashboard', 'SiteDashboard', 'PlacementDashboard', 'DSPDashboard', 'DealDashboard'];
         const supplyPages = ['Broker', 'Realm', 'Company', 'Site', 'Placement'];
-        const demandPages = ['DSPManagement', 'DSP', 'UserSyncManagement', 'UserSync', 'BlockedCreativeManagement'];
+        const demandPages = ['DSPManagement', 'DSP', 'UserSyncManagement', 'EditUserSync', 'UserSync', 'BlockedCreativeManagement'];
         const builderPages = ['BuilderOperations', 'BuilderAdserver'];
         
         // Profitability pages

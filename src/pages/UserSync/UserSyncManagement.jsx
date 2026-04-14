@@ -154,7 +154,7 @@ export default function UserSyncManagement() {
                       <tr
                         key={item.uid}
                         className="border-b hover:bg-[rgb(75,99,226)]/10 cursor-pointer"
-                        onClick={() => navigate(`/UserSync?id=${item.uid}&name=${encodeURIComponent(item.name)}`)}
+                        onClick={() => navigate(`/EditUserSync?id=${item.uid}&name=${encodeURIComponent(item.name)}`)}
                       >
                         <td className="p-3 font-medium text-slate-900 text-sm hover:text-[rgb(75,99,226)] transition-colors">{item.name}</td>
                         <td className="p-3 text-xs font-mono text-slate-400">{item.uid}</td>
