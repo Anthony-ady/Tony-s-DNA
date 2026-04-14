@@ -151,6 +151,57 @@ export function EntityPerformanceCard({
 
   const [isHovered, setIsHovered] = React.useState(false);
 
+  /** Linear scale + domain focused on data range so daily impression variation stays visible.
+   * Log scale was flattening the blue line and breaks when visible impressions are 0. */
+  const impressionsChartScale = React.useMemo(() => {
+    if (!sparkData?.length) {
+      return {
+        impDomain: [0, "auto"],
+        visDomain: [0, "auto"],
+        needDualAxis: false,
+        showVisibleLine: false,
+      };
+    }
+    const imps = sparkData.map((d) => Number(d.impressions) || 0);
+    const vis = sparkData.map((d) => Number(d.visibleImpressions) || 0);
+    const maxVis = Math.max(0, ...vis);
+    const minI = Math.min(...imps);
+    const maxI = Math.max(...imps);
+    let impDomain;
+    if (maxI <= 0) {
+      impDomain = [0, 1];
+    } else {
+      const spread = maxI - minI;
+      const pad = spread > 0 ? spread * 0.15 : maxI * 0.08;
+      impDomain = [Math.max(0, minI - pad), maxI + pad];
+    }
+    const showVisibleLine = maxVis > 0;
+    const needDualAxis =
+      showVisibleLine &&
+      maxI > 0 &&
+      maxVis > 0 &&
+      maxI / maxVis >= 10;
+    if (!needDualAxis && showVisibleLine && maxI > 0 && maxVis > 0) {
+      const minV = Math.min(...vis);
+      const maxV = maxVis;
+      const minCombined = Math.min(minI, minV);
+      const maxCombined = Math.max(maxI, maxV);
+      const spread = maxCombined - minCombined;
+      const pad = spread > 0 ? spread * 0.12 : maxCombined * 0.08;
+      impDomain = [Math.max(0, minCombined - pad), maxCombined + pad];
+    }
+    let visDomain = [0, "auto"];
+    if (needDualAxis) {
+      const visPositive = vis.filter((v) => v > 0);
+      const minV = visPositive.length ? Math.min(...visPositive) : 0;
+      const maxV = Math.max(...vis, 0);
+      const vSpread = maxV - minV;
+      const vPad = vSpread > 0 ? vSpread * 0.15 : Math.max(maxV * 0.08, 1);
+      visDomain = [Math.max(0, minV - vPad * 0.5), maxV + vPad];
+    }
+    return { impDomain, visDomain, needDualAxis, showVisibleLine };
+  }, [sparkData]);
+
   return (
     <div
       className="relative flex flex-col justify-between rounded-xl border border-slate-200 bg-white text-slate-900 p-5 shadow-sm cursor-pointer hover:border-[rgb(30,47,130)] hover:shadow-md transition"
@@ -388,9 +439,12 @@ export function EntityPerformanceCard({
             </div>
             <div className="h-12 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={sparkData} margin={{ top: 4, right: 4, left: -8, bottom: 0 }}>
+              <LineChart data={sparkData} margin={{ top: 4, right: impressionsChartScale.needDualAxis ? 2 : 4, left: -8, bottom: 0 }}>
                 <XAxis dataKey="dateLabel" hide />
-                <YAxis hide scale="log" domain={["auto", "auto"]} />
+                <YAxis yAxisId="imp" hide domain={impressionsChartScale.impDomain} />
+                {impressionsChartScale.needDualAxis && (
+                  <YAxis yAxisId="vis" orientation="right" hide domain={impressionsChartScale.visDomain} />
+                )}
                 <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" vertical={false} />
                 <RechartsTooltip
                   formatter={(value, name) => [
@@ -415,6 +469,7 @@ export function EntityPerformanceCard({
                   }}
                 />
                 <Line
+                  yAxisId="imp"
                   type="monotone"
                   dataKey="impressions"
                   stroke="#3b82f6"
@@ -422,17 +477,21 @@ export function EntityPerformanceCard({
                   dot={false}
                   activeDot={{ r: 3 }}
                 />
-                <Line
-                  type="monotone"
-                  dataKey="visibleImpressions"
-                  stroke="#f97316"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 3 }}
-                />
+                {impressionsChartScale.showVisibleLine && (
+                  <Line
+                    yAxisId={impressionsChartScale.needDualAxis ? "vis" : "imp"}
+                    type="monotone"
+                    dataKey="visibleImpressions"
+                    stroke="#f97316"
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 3 }}
+                  />
+                )}
                 {/* Show yesterday impressions line in hourly mode when data is available */}
                 {viewMode === 'hourly' && sparkData.some(d => d.yesterdayImpressions !== null) && (
                   <Line
+                    yAxisId="imp"
                     type="monotone"
                     dataKey="yesterdayImpressions"
                     stroke="#3b82f6"
@@ -443,8 +502,9 @@ export function EntityPerformanceCard({
                     activeDot={{ r: 3 }}
                   />
                 )}
-                {viewMode === 'hourly' && sparkData.some(d => d.yesterdayVisibleImpressions !== null) && (
+                {impressionsChartScale.showVisibleLine && viewMode === 'hourly' && sparkData.some(d => d.yesterdayVisibleImpressions !== null) && (
                   <Line
+                    yAxisId={impressionsChartScale.needDualAxis ? "vis" : "imp"}
                     type="monotone"
                     dataKey="yesterdayVisibleImpressions"
                     stroke="#f97316"
