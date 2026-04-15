@@ -28,7 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from '../../components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Building2, Loader2, Save, X, AlertCircle, Users, ClipboardCopy, Globe2, Clock3, AppWindow, Monitor, Video, ImageIcon, Layers, Film, Target as TargetIcon, FileText, DollarSign, Smartphone, Sparkles, Search, Trash2, ChevronDown } from 'lucide-react';
+import { Building2, Loader2, Save, X, AlertCircle, AlertTriangle, Users, ClipboardCopy, Globe2, Clock3, AppWindow, Monitor, Video, ImageIcon, Layers, Film, Target as TargetIcon, FileText, DollarSign, Smartphone, Sparkles, Search, Trash2, ChevronDown } from 'lucide-react';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { authService } from '../../services/authService';
 import { toast } from 'sonner';
@@ -37,6 +37,12 @@ import { cn } from '@/lib/utils';
 import { TAILWIND_CLASSES } from '@/config/theme';
 import { API_ENDPOINTS, apiUrl } from '@/config/api';
 import EntityEditorLayout from '@/components/layouts/EntityEditorLayout';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const DEVICE_OPTIONS = ['DESKTOP', 'MOBILE', 'TABLET'];
 const BROWSER_OPTIONS = [
@@ -1964,9 +1970,24 @@ const EditDeal = () => {
   ];
 
   const priorityOptions = [
-    { value: 'OPEN', label: 'Normal' },
-    { value: 'SECOND_LOOK', label: 'Medium' },
-    { value: 'FIRST_LOOK', label: 'Highest' },
+    {
+      value: 'OPEN',
+      label: 'Normal',
+      description:
+        'Default value — all deals with no specific look option; there is no priority given to this group.',
+    },
+    {
+      value: 'SECOND_LOOK',
+      label: 'Medium',
+      description:
+        'If there are no first look deals to process, the priority is given to deals with the second look option.',
+    },
+    {
+      value: 'FIRST_LOOK',
+      label: 'Highest',
+      description:
+        'The priority is given to all deals with the first look option. If every deal uses Highest, none stands out. The effective priority is flat across them.',
+    },
   ];
 
   const filteredLanguageEntries = useMemo(() => {
@@ -2856,20 +2877,44 @@ const EditDeal = () => {
                   </div>
                   <div className="space-y-3">
                     <Label className="text-xs uppercase tracking-wide text-slate-500">Bid priority</Label>
+                    <TooltipProvider delayDuration={250}>
+                      <div className="space-y-2">
                         <div className="flex flex-wrap gap-2">
-                      {priorityOptions.map((option) => (
-                        <button
-                          key={option.value}
-                          type="button"
-                          className={toggleChipClassName(
-                            isPriorityOptionSelected(dealData.PriorityKind, option.value),
-                          )}
-                          onClick={() => updateDealData('PriorityKind', option.value)}
-                        >
-                          {option.label}
-                        </button>
+                          {priorityOptions.map((option) => (
+                            <Tooltip key={option.value}>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  className={toggleChipClassName(
+                                    isPriorityOptionSelected(dealData.PriorityKind, option.value),
+                                  )}
+                                  onClick={() => updateDealData('PriorityKind', option.value)}
+                                >
+                                  {option.label}
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent
+                                side="top"
+                                className="max-w-[min(100vw-2rem,22rem)] bg-slate-900 text-slate-50 border-slate-700 px-3 py-2 text-left text-xs font-normal leading-snug shadow-md"
+                              >
+                                {option.description}
+                              </TooltipContent>
+                            </Tooltip>
                           ))}
-                    </div>
+                        </div>
+                        {isPriorityOptionSelected(dealData.PriorityKind, 'FIRST_LOOK') && (
+                          <p
+                            className="flex gap-1.5 items-start rounded-md border border-amber-200/90 bg-amber-50 px-2 py-1.5 text-[11px] leading-snug text-amber-950"
+                            role="status"
+                          >
+                            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" aria-hidden />
+                            <span>
+                              If every deal uses Highest, none stands out. The effective priority is flat across them.
+                            </span>
+                          </p>
+                        )}
+                      </div>
+                    </TooltipProvider>
                         </div>
                       </div>
                     </CardContent>
