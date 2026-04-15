@@ -16,7 +16,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { authService } from '@/services/authService';
 import { API_ENDPOINTS } from '@/config/api';
-
+import { cn } from '@/lib/utils';
+import { TAILWIND_CLASSES } from '@/config/theme';
 const DEFAULT_ENDPOINT = API_ENDPOINTS.DRUID_SEARCH;
 const TIME_ZONE = 'Etc/GMT';
 const STORAGE_KEY = 'builder:operations-config';
@@ -786,13 +787,13 @@ export default function BuilderOperations() {
                 <CalendarDays className="w-4 h-4 text-slate-500" />
               </div>
               <div>
-                <span className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Settings</span>
+                <span className={cn(TAILWIND_CLASSES.formSectionLabel, 'text-slate-400 tracking-[0.2em]')}>Settings</span>
               </div>
             </div>
             <div className="px-5 py-4 space-y-4">
               <div className="flex flex-wrap gap-4 items-end">
                 <div className="space-y-2 w-[140px]">
-                  <Label className="text-xs uppercase tracking-wide text-slate-500">Start</Label>
+                  <Label>Start</Label>
                   <Input
                     type="date"
                     value={startInput}
@@ -808,7 +809,7 @@ export default function BuilderOperations() {
                   />
                 </div>
                 <div className="space-y-2 w-[140px]">
-                  <Label className="text-xs uppercase tracking-wide text-slate-500">End</Label>
+                  <Label>End</Label>
                   <Input
                     type="date"
                     value={endInput}
@@ -824,7 +825,7 @@ export default function BuilderOperations() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs uppercase tracking-wide text-slate-500">Granularity</Label>
+                  <Label>Granularity</Label>
                   <div className="flex gap-2">
                     <button
                       type="button"
@@ -860,7 +861,7 @@ export default function BuilderOperations() {
                 <BarChart3 className="w-4 h-4 text-slate-500" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Metrics</span>
+                <span className={cn(TAILWIND_CLASSES.formSectionLabel, 'text-slate-400 tracking-[0.2em]')}>Metrics</span>
                 <button
                   type="button"
                   onClick={() => setMetricDialogOpen(true)}
@@ -892,7 +893,7 @@ export default function BuilderOperations() {
                 <Layers className="w-4 h-4 text-slate-500" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Dimensions</span>
+                <span className={cn(TAILWIND_CLASSES.formSectionLabel, 'text-slate-400 tracking-[0.2em]')}>Dimensions</span>
                 <button
                   type="button"
                   onClick={() => setDimensionDialogOpen(true)}
@@ -926,7 +927,7 @@ export default function BuilderOperations() {
                 <Filter className="w-4 h-4 text-slate-500" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Filters</span>
+                <span className={cn(TAILWIND_CLASSES.formSectionLabel, 'text-slate-400 tracking-[0.2em]')}>Filters</span>
                 <button
                   type="button"
                   onClick={() => setFilterDialogOpen(true)}
@@ -1070,7 +1071,7 @@ export default function BuilderOperations() {
                               return (
                                 <TableHead 
                                   key={column} 
-                                  className="text-xs font-semibold uppercase tracking-wide text-slate-600 bg-slate-100/40 cursor-pointer hover:bg-slate-200/40 select-none"
+                                  className={cn(TAILWIND_CLASSES.formSectionLabel, 'font-semibold bg-slate-100/40 cursor-pointer hover:bg-slate-200/40 select-none')}
                                   onClick={() => handleSort(column)}
                                 >
                                   <div className="flex items-center gap-2">
@@ -1318,7 +1319,7 @@ function MetricSelectionDialog({ open, onOpenChange, selectedMetrics, onMetricsC
                       >
                         {allSelected && <Check className="h-3 w-3 text-white" />}
                       </div>
-                      <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      <h4 className={cn(TAILWIND_CLASSES.formSectionLabel, 'font-semibold')}>
                         {categoryName}
                       </h4>
                     </label>
@@ -1346,7 +1347,7 @@ function MetricSelectionDialog({ open, onOpenChange, selectedMetrics, onMetricsC
                           >
                             {isSelected && <Check className="h-3 w-3 text-white" />}
                           </div>
-                          <span className="text-sm text-slate-700 flex-1 leading-tight">{metric.label}</span>
+                          <span className={cn(TAILWIND_CLASSES.formSectionLabel, 'flex-1 leading-tight')}>{metric.label}</span>
                         </label>
                       );
                     })}
@@ -2325,7 +2326,7 @@ function FilterDialog({ open, onOpenChange, filters, onFiltersChange }) {
             {localFilters.map((filter) => (
               <div key={filter.id} className="border border-slate-200 rounded-md px-3 py-3 space-y-3">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs uppercase tracking-wide text-slate-500">Field</Label>
+                  <Label>Field</Label>
                   <Button type="button" variant="ghost" size="sm" className="text-red-500" onClick={() => removeFilter(filter.id)}>
                     <X className="w-3 h-3 mr-1" />
                     Remove
@@ -2344,7 +2345,7 @@ function FilterDialog({ open, onOpenChange, filters, onFiltersChange }) {
                   </SelectContent>
                 </Select>
                 <div className="space-y-2">
-                  <Label className="text-xs uppercase tracking-wide text-slate-500">
+                  <Label>
                     {filter.field === 'realmId' ? 'Select Realms' :
                      filter.field === 'publisherId' ? 'Select Companies' :
                      filter.field === 'SiteId' ? 'Select Sites' :

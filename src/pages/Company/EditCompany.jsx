@@ -21,6 +21,7 @@ import EntityEditorLayout from '@/components/layouts/EntityEditorLayout';
 import { useEntityFetch } from '@/hooks/useEntityFetch';
 import { apiPut } from '@/services/apiClient';
 import { toast } from 'sonner';
+import { toggleChipClassName } from '@/lib/toggleChip';
 
 const EditCompany = () => {
   const [searchParams] = useSearchParams();
@@ -354,20 +355,24 @@ const EditCompany = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="inventoryDirectness">Inventory Directness</Label>
-                      <Select
-                        value={companyData.InventoryDirectness ?? ''}
-                        onValueChange={(value) => setCompanyData({ ...companyData, InventoryDirectness: value })}
-                      >
-                        <SelectTrigger id="inventoryDirectness" className="bg-white">
-                          <SelectValue placeholder="Select inventory directness" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="BOTH">BOTH</SelectItem>
-                          <SelectItem value="DIRECT">DIRECT</SelectItem>
-                          <SelectItem value="RESELLER">RESELLER</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Label>Inventory Directness</Label>
+                      <div className="flex flex-wrap gap-2" role="group" aria-label="Inventory directness">
+                        {['BOTH', 'DIRECT', 'RESELLER'].map((opt) => {
+                          const current = companyData.InventoryDirectness ?? '';
+                          return (
+                            <button
+                              key={opt}
+                              type="button"
+                              className={toggleChipClassName(current === opt)}
+                              onClick={() =>
+                                setCompanyData({ ...companyData, InventoryDirectness: opt })
+                              }
+                            >
+                              {opt}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
 

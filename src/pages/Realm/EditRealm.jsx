@@ -579,7 +579,7 @@ const EditRealm = () => {
                               }}
                               className="h-5 w-5 border-2 border-slate-300 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600 data-[state=checked]:text-white"
                             />
-                            <Label htmlFor={`source-${value}`} className="text-sm font-medium cursor-pointer">
+                            <Label htmlFor={`source-${value}`} className="cursor-pointer">
                               {label}
                             </Label>
                           </div>
@@ -774,30 +774,6 @@ const EditRealm = () => {
                               }
                             }
                           })}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-slate-900">Auction Parameters</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="auctionTimeout">Auction Timeout</Label>
-                        <Input
-                          id="auctionTimeout"
-                          type="number"
-                          value={realmData.SspConfig?.AuctionTimeout || 0}
-                          onChange={(e) => setRealmData({
-                            ...realmData,
-                            SspConfig: {
-                              ...realmData.SspConfig,
-                              AuctionTimeout: parseInt(e.target.value) || 0
-                            }
-                          })}
-                          className="bg-white"
                         />
                       </div>
                     </div>

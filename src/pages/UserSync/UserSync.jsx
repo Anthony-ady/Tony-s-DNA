@@ -292,7 +292,7 @@ export function UserSyncPanel({
                 </Button>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs text-slate-500">URL</Label>
+                <Label>URL</Label>
                 <Input
                   value={ep.url ?? ''}
                   onChange={e => {
@@ -361,7 +361,7 @@ export function UserSyncPanel({
           </CollapsibleContent>
         </Collapsible>
         <div className="space-y-1">
-          <Label className="text-xs text-slate-500">URL</Label>
+          <Label>URL</Label>
           <Input
             value={data.secondary_redirect ?? ''}
             onChange={(e) => {

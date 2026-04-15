@@ -36,6 +36,7 @@ import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import CollapsibleBadgeList from '@/components/shared/CollapsibleBadgeList';
 import { toggleChipClassName } from '@/lib/toggleChip';
+import { TAILWIND_CLASSES } from '@/config/theme';
 
 
 // ===== UTILITY FUNCTIONS AND CONSTANTS =====
@@ -643,7 +644,7 @@ export default function BrokerConfigDisplay({ data, onUpdateName, onUpdateSeller
                         )}
                         {inventory_directness && (
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between p-3 bg-white rounded-lg border border-slate-200">
-                                <span className="font-semibold text-slate-700 text-xs uppercase tracking-wide">Inventory</span>
+                                <span className={TAILWIND_CLASSES.formSectionLabel}>Inventory</span>
                                 <div className="flex flex-wrap gap-2">
                                     {['DIRECT', 'RESELLER'].map((mode) => (
                                         <button
@@ -689,7 +690,7 @@ export default function BrokerConfigDisplay({ data, onUpdateName, onUpdateSeller
                             const isCurrentlyActive = !!(contents && contents[adKindConfig.key]);
                             return (
                                 <div key={adKindConfig.key} className="flex items-center justify-between p-3 rounded-lg bg-white border border-slate-200">
-                                    <Label className="text-xs font-medium text-slate-700">{friendlyName}</Label>
+                                    <Label>{friendlyName}</Label>
                                     <div className={`flex items-center gap-2 px-3 py-1.5 rounded-md ${isCurrentlyActive ? 'bg-green-100' : 'bg-red-100'}`}>
                                         <Switch
                                             checked={isCurrentlyActive}
@@ -724,7 +725,7 @@ export default function BrokerConfigDisplay({ data, onUpdateName, onUpdateSeller
                         <div className="p-3 bg-white rounded-lg border border-slate-200 md:col-span-2">
                             <div className="flex items-center gap-3 mb-2">
                                 <Monitor className="w-4 h-4 text-slate-500" />
-                                <span className="text-xs font-medium text-slate-700">Enabled devices</span>
+                                <span className={TAILWIND_CLASSES.formSectionLabel}>Enabled devices</span>
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 {ALL_DEVICES.map(device => {
@@ -750,7 +751,7 @@ export default function BrokerConfigDisplay({ data, onUpdateName, onUpdateSeller
                         {/* Countries Inclusion */}
                         <div>
                             <div className="flex items-center justify-between mb-2">
-                                <Label className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
+                                <Label className="flex items-center gap-1.5">
                                     <PlusCircle className="w-3.5 h-3.5 text-green-600" />
                                     Countries Inclusion
                                     {isSavingTargeting && <Loader2 className="w-3 h-3 animate-spin" />}
@@ -782,7 +783,7 @@ export default function BrokerConfigDisplay({ data, onUpdateName, onUpdateSeller
 
                             {/* Countries Exclusion */}
                             <div className="flex items-center justify-between mt-4 mb-2">
-                                <Label className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
+                                <Label className="flex items-center gap-1.5">
                                     <MinusCircle className="w-3.5 h-3.5 text-red-600" />
                                     Countries Exclusion
                                     {isSavingTargeting && <Loader2 className="w-3 h-3 animate-spin" />}
@@ -816,7 +817,7 @@ export default function BrokerConfigDisplay({ data, onUpdateName, onUpdateSeller
                         {/* Site Domains Inclusion */}
                         <div>
                             <div className="flex items-center justify-between mb-2">
-                                <Label className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
+                                <Label className="flex items-center gap-1.5">
                                     <PlusCircle className="w-3.5 h-3.5 text-green-600" />
                                     Site Domains Inclusion
                                     {isSavingTargeting && <Loader2 className="w-3 h-3 animate-spin" />}
@@ -848,7 +849,7 @@ export default function BrokerConfigDisplay({ data, onUpdateName, onUpdateSeller
 
                             {/* Site Domains Exclusion */}
                             <div className="flex items-center justify-between mt-4 mb-2">
-                                <Label className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
+                                <Label className="flex items-center gap-1.5">
                                     <MinusCircle className="w-3.5 h-3.5 text-red-600" />
                                     Site Domains Exclusion
                                     {isSavingTargeting && <Loader2 className="w-3 h-3 animate-spin" />}

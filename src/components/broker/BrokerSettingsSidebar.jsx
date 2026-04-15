@@ -94,7 +94,7 @@ export default function BrokerSettingsSidebar({ data, onUpdateSspConfig, onUpdat
         return (
             <div className="flex items-center justify-between p-3 rounded-lg bg-white border border-slate-200">
                 <div className="flex-1">
-                    <Label className="text-sm font-medium text-slate-700">{label}</Label>
+                    <Label>{label}</Label>
                     {description && <p className="text-xs text-slate-500 mt-1">{description}</p>}
                 </div>
                 <div className={`flex items-center gap-2 px-3 py-1.5 rounded-md ${checked ? 'bg-green-100' : 'bg-red-100'}`}>
@@ -128,7 +128,7 @@ export default function BrokerSettingsSidebar({ data, onUpdateSspConfig, onUpdat
                         <div className="space-y-3 pl-2">
                             <div className="flex items-center justify-between p-3 rounded-lg bg-white border border-slate-200">
                                 <div className="flex-1">
-                                    <Label className="text-sm font-medium text-slate-700">Debug Logging</Label>
+                                    <Label>Debug Logging</Label>
                                     <p className="text-xs text-slate-500 mt-1">Enable verbose logging</p>
                                 </div>
                                 <div className={`flex items-center gap-2 px-3 py-1.5 rounded-md ${isDebugEnabled ? 'bg-green-100' : 'bg-red-100'}`}>
@@ -146,7 +146,7 @@ export default function BrokerSettingsSidebar({ data, onUpdateSspConfig, onUpdat
                             
                             {isDebugEnabled && (
                                 <div className="p-3 rounded-lg bg-white border border-slate-200">
-                                    <Label htmlFor="chuckIdInput" className="text-sm font-medium text-slate-700 mb-2 block">Chuck Norris ID</Label>
+                                    <Label htmlFor="chuckIdInput" className="mb-2 block">Chuck Norris ID</Label>
                                     <div className="flex items-center gap-2">
                                         <Input
                                             id="chuckIdInput"

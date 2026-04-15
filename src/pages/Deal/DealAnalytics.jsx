@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { API_ENDPOINTS } from "@/config/api";
 import { formatCurrency, formatEcpm, formatRpbr, formatLargeNumber, formatPercentage } from "@/utils/formatters";
+import { TAILWIND_CLASSES } from "@/config/theme";
 
 export default function DealAnalytics() {
   const { getToken } = useAuth();
@@ -770,7 +771,7 @@ export default function DealAnalytics() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">DSP Revenue</p>
+                    <p className={TAILWIND_CLASSES.formSectionLabel}>DSP Revenue</p>
                 <p className="text-lg lg:text-xl font-bold text-green-600">{formatCurrencyFn(summaryStats.totalDSP)}</p>
                   </div>
               <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
@@ -784,7 +785,7 @@ export default function DealAnalytics() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Publisher Costs</p>
+                    <p className={TAILWIND_CLASSES.formSectionLabel}>Publisher Costs</p>
                 <p className="text-lg lg:text-xl font-bold text-red-600">{formatCurrencyFn(summaryStats.totalPublisher)}</p>
                   </div>
               <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center">
@@ -798,7 +799,7 @@ export default function DealAnalytics() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Margin</p>
+                    <p className={TAILWIND_CLASSES.formSectionLabel}>Margin</p>
                 <p className="text-lg lg:text-xl font-bold" style={{ color: 'rgb(79, 70, 229)' }}>{formatCurrencyFn(summaryStats.totalMargin)}</p>
                   </div>
               <div className="w-8 h-8 bg-gradient-to-br from-[rgb(75,99,226)] to-purple-600 rounded-lg flex items-center justify-center">
@@ -812,7 +813,7 @@ export default function DealAnalytics() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Avg Margin %</p>
+                    <p className={TAILWIND_CLASSES.formSectionLabel}>Avg Margin %</p>
                 <p className="text-lg lg:text-xl font-bold text-orange-600">{summaryStats.marginPercentage.toFixed(1)}%</p>
                   </div>
               <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">

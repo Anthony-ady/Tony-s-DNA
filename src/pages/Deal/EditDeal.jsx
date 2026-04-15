@@ -2430,7 +2430,7 @@ const EditDeal = () => {
                       </div>
                       <Separator />
                 <div className="space-y-3">
-                  <Label className="text-xs uppercase tracking-wide text-slate-500">Deal type</Label>
+                  <Label>Deal type</Label>
                   <div className="flex flex-wrap gap-2">
                     {dealTypes.map((option) => (
                       <button
@@ -2445,9 +2445,9 @@ const EditDeal = () => {
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <Label className="text-xs uppercase tracking-wide text-slate-500">DSP partner whitelist</Label>
+                  <Label>DSP partner whitelist</Label>
                   <div className="space-y-2 max-w-2xl">
-                    <Label className="text-xs text-slate-600">Search partner</Label>
+                    <Label>Search partner</Label>
                     <div className="relative">
                       <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
                       <Input
@@ -2550,7 +2550,7 @@ const EditDeal = () => {
 
                           <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start">
                           <div className="min-w-0 flex-1 space-y-2">
-                            <Label className="text-xs text-slate-600">Search seat</Label>
+                            <Label>Search seat</Label>
                             <div
                               ref={(el) => {
                                 if (el) partnerSeatSearchRootRefs.current[uid] = el;
@@ -2632,7 +2632,7 @@ const EditDeal = () => {
                           </div>
 
                           <div className="min-w-0 flex-1 space-y-2">
-                            <Label className="text-xs text-slate-500">Selected seats</Label>
+                            <Label>Selected seats</Label>
                             <div className="flex flex-wrap gap-1.5">
                               {(cfg?.Seats || []).length === 0 ? (
                                 <span className="text-xs text-slate-400">None — search or add a seat UID under Search seat.</span>
@@ -2689,7 +2689,7 @@ const EditDeal = () => {
                         onCheckedChange={(checked) => updateDealData('BannerStoryDisplay', checked)}
                       />
                       <div>
-                        <Label htmlFor="banner-story" className="font-medium">Banner story display</Label>
+                        <Label htmlFor="banner-story">Banner story display</Label>
                         <p className="text-xs text-slate-500">Story placement for banner inventory.</p>
                       </div>
                     </div>
@@ -2702,7 +2702,7 @@ const EditDeal = () => {
                         onCheckedChange={(checked) => updateDealData('StoryDisplay', checked)}
                       />
                       <div>
-                        <Label htmlFor="native-story" className="font-medium">Native story display</Label>
+                        <Label htmlFor="native-story">Native story display</Label>
                         <p className="text-xs text-slate-500">Applies to story / native display formats.</p>
                       </div>
                     </div>
@@ -2797,8 +2797,8 @@ const EditDeal = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <div className="flex flex-col gap-2">
-                      <Label className="font-medium block">Floor price</Label>
-                      <Label className="block text-xs text-slate-500">USD CPM</Label>
+                      <Label className="block">Floor price</Label>
+                      <Label className="block">USD CPM</Label>
                     </div>
                     <Input
                       type="number"
@@ -2820,7 +2820,7 @@ const EditDeal = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="font-medium">Min margin</Label>
+                    <Label>Min margin</Label>
                     <div className="flex flex-wrap gap-2 mb-2">
                       <button
                         type="button"
@@ -2861,7 +2861,7 @@ const EditDeal = () => {
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="space-y-3">
-                    <Label className="text-xs uppercase tracking-wide text-slate-500">Bid price</Label>
+                    <Label>Bid price</Label>
                         <div className="flex flex-wrap gap-2">
                       {auctionTypeOptions.map((option) => (
                         <button
@@ -2876,7 +2876,7 @@ const EditDeal = () => {
                     </div>
                   </div>
                   <div className="space-y-3">
-                    <Label className="text-xs uppercase tracking-wide text-slate-500">Bid priority</Label>
+                    <Label>Bid priority</Label>
                     <TooltipProvider delayDuration={250}>
                       <div className="space-y-2">
                         <div className="flex flex-wrap gap-2">
@@ -2933,7 +2933,7 @@ const EditDeal = () => {
               </CardHeader>
               <CardContent className="space-y-6 text-sm text-slate-600">
                 <div className="space-y-2">
-                  <Label className="text-xs uppercase tracking-wide text-slate-500">Distribution channel</Label>
+                  <Label>Distribution channel</Label>
                   <div className="flex flex-wrap gap-2">
                     {['APP', 'SITE'].map((ch) => (
                       <button
@@ -2961,9 +2961,9 @@ const EditDeal = () => {
               </CardHeader>
               <CardContent className="space-y-6 text-sm text-slate-600">
                 <div className="space-y-4 max-w-2xl">
-                  <Label className="text-xs uppercase tracking-wide text-slate-500">Broker partners</Label>
+                  <Label>Broker partners</Label>
                   <div className="space-y-2">
-                    <Label className="text-xs text-slate-600">Search broker</Label>
+                    <Label>Search broker</Label>
                     <div className="relative">
                       <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
                       <Input
@@ -3021,7 +3021,7 @@ const EditDeal = () => {
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs text-slate-500">Selected brokers</Label>
+                    <Label>Selected brokers</Label>
                     <div className="flex flex-wrap gap-1.5">
                       {(!(dealData.Targeting?.BrokerPartners || []).length) ? (
                         <span className="text-xs text-slate-400">None — use search above.</span>
@@ -3053,7 +3053,7 @@ const EditDeal = () => {
                 </div>
                 <Separator />
                 <div className="space-y-2">
-                  <Label className="text-xs uppercase tracking-wide text-slate-500">Device</Label>
+                  <Label>Device</Label>
                   <div className="flex flex-wrap gap-2">
                     {DEVICE_OPTIONS.map((d) => (
                       <button
@@ -3070,7 +3070,7 @@ const EditDeal = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs uppercase tracking-wide text-slate-500">Browser</Label>
+                  <Label>Browser</Label>
                   <div className="flex flex-wrap gap-2">
                     {BROWSER_OPTIONS.map((b) => (
                       <button
@@ -3087,7 +3087,7 @@ const EditDeal = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs uppercase tracking-wide text-slate-500">OS</Label>
+                  <Label>OS</Label>
                   <div className="flex flex-wrap gap-2">
                     {OS_OPTIONS.map((o) => (
                       <button
@@ -3115,7 +3115,7 @@ const EditDeal = () => {
               </CardHeader>
               <CardContent className="space-y-6 text-sm text-slate-600">
                 <div className="space-y-3">
-                  <Label className="text-xs uppercase tracking-wide text-slate-500">Search countries</Label>
+                  <Label>Search countries</Label>
                   <div className="relative max-w-xl">
                     <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
                     <Input
@@ -3220,7 +3220,7 @@ const EditDeal = () => {
 
                 <Separator />
                 <div className="space-y-3">
-                  <Label className="text-xs uppercase tracking-wide text-slate-500">Browser languages</Label>
+                  <Label>Browser languages</Label>
                   <div className="relative max-w-xl">
                     <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
                     <Input
@@ -3538,7 +3538,7 @@ const EditDeal = () => {
               </CardHeader>
               <CardContent className="space-y-6 text-sm text-slate-600">
                 <div className="space-y-2">
-                  <Label className="text-xs uppercase tracking-wide text-slate-500">OpenWeb category (sources)</Label>
+                  <Label>OpenWeb category (sources)</Label>
                   <div className="flex flex-wrap gap-2 max-h-64 overflow-y-auto pr-1">
                     {OPENWEB_SOURCE_OPTIONS.map((o) => (
                       <button
@@ -3556,7 +3556,7 @@ const EditDeal = () => {
                 </div>
                 <Separator />
                 <div className="space-y-2">
-                  <Label className="text-xs uppercase tracking-wide text-slate-500">Excluded OpenWeb sources</Label>
+                  <Label>Excluded OpenWeb sources</Label>
                   <div className="flex flex-wrap gap-2 max-h-64 overflow-y-auto pr-1">
                     {OPENWEB_SOURCE_OPTIONS.map((o) => (
                       <button
@@ -3589,10 +3589,10 @@ const EditDeal = () => {
               </CardHeader>
               <CardContent className="space-y-6 text-sm text-slate-600">
                 <div className="space-y-3">
-                  <Label className="text-xs uppercase tracking-wide text-slate-500">Openers</Label>
+                  <Label>Openers</Label>
                   <div className="flex flex-wrap gap-6">
                     {openerOptions.map((opener) => (
-                      <label key={opener.value} className="flex items-center gap-2 text-sm text-slate-600">
+                      <label key={opener.value} className={cn(TAILWIND_CLASSES.formSectionLabel, 'flex items-center gap-2')}>
                         <Checkbox
                           checked={isOpenerActive(opener.value)}
                           onCheckedChange={() => toggleOpener(opener.value)}
@@ -3609,7 +3609,7 @@ const EditDeal = () => {
                     onCheckedChange={(checked) => updateNestedData('Content', 'PauseVideoWhenNotVisible', checked)}
                   />
                   <div>
-                    <Label htmlFor="pause-video" className="font-medium">Pause video when not visible</Label>
+                    <Label htmlFor="pause-video">Pause video when not visible</Label>
                     <p className="text-xs text-slate-500">Content.PauseVideoWhenNotVisible</p>
                   </div>
                 </div>
@@ -3620,7 +3620,7 @@ const EditDeal = () => {
                     onCheckedChange={(checked) => updateDealData('AllowJavascript', checked)}
                   />
                   <div>
-                    <Label htmlFor="allow-js-adv" className="font-medium">Allow JavaScript</Label>
+                    <Label htmlFor="allow-js-adv">Allow JavaScript</Label>
                     <p className="text-xs text-slate-500">Enable JavaScript creatives for this deal.</p>
                   </div>
                 </div>
@@ -3636,7 +3636,7 @@ const EditDeal = () => {
               </CardHeader>
               <CardContent className="space-y-6 text-sm text-slate-600">
                 <div className="space-y-3">
-                  <Label className="text-xs uppercase tracking-wide text-slate-500">Measurement solutions</Label>
+                  <Label>Measurement solutions</Label>
                   <div className="flex flex-wrap gap-6">
                     {MEASUREMENT_SOLUTIONS.map((m) => (
                       <div key={m.key} className="flex items-center gap-2">
@@ -3652,9 +3652,9 @@ const EditDeal = () => {
                 </div>
                 <Separator />
                 <div className="space-y-4 max-w-2xl">
-                  <Label className="text-xs uppercase tracking-wide text-slate-500">Excluded deals</Label>
+                  <Label>Excluded deals</Label>
                   <div className="space-y-2">
-                    <Label className="text-xs text-slate-600">Search deal</Label>
+                    <Label>Search deal</Label>
                     <div className="relative">
                       <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
                       <Input
@@ -3712,7 +3712,7 @@ const EditDeal = () => {
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs text-slate-500">Excluded</Label>
+                    <Label>Excluded</Label>
                     <div className="flex flex-wrap gap-1.5">
                       {(!(dealData.ExcludedDeals || []).length) ? (
                         <span className="text-xs text-slate-400">None — use search above.</span>
@@ -3744,10 +3744,10 @@ const EditDeal = () => {
                 </div>
                 <Separator />
                 <div className="space-y-3">
-                  <Label className="text-xs uppercase tracking-wide text-slate-500">Ad units</Label>
+                  <Label>Ad units</Label>
                   <div className="flex flex-wrap gap-2">
                     {AD_UNIT_OPTIONS.map((u) => (
-                      <label key={u} className="flex items-center gap-2 text-sm text-slate-600">
+                      <label key={u} className={cn(TAILWIND_CLASSES.formSectionLabel, 'flex items-center gap-2')}>
                         <Checkbox
                           checked={Array.isArray(dealData.Targeting?.AdUnits) && dealData.Targeting.AdUnits.includes(u)}
                           onCheckedChange={() => toggleAdUnit(u)}

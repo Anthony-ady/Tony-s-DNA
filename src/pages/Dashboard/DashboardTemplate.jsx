@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, TrendingUp, DollarSign, ChevronDown, ChevronRight, ChevronLeft, ArrowUpRight, ArrowDownRight, BarChart3, Calendar, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cachedFetch } from '@/utils/apiCache';
+import { TAILWIND_CLASSES } from '@/config/theme';
 
 export default function DashboardTemplate({
   // Configuration
@@ -778,7 +779,7 @@ export default function DashboardTemplate({
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">DSP Revenue</p>
+                  <p className={TAILWIND_CLASSES.formSectionLabel}>DSP Revenue</p>
                   <p className="text-lg lg:text-xl font-bold text-green-600">
                     {formatCurrency(summaryStats.entityRevenue)}
                   </p>
@@ -794,7 +795,7 @@ export default function DashboardTemplate({
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Publisher Costs</p>
+                  <p className={TAILWIND_CLASSES.formSectionLabel}>Publisher Costs</p>
                   <p className="text-lg lg:text-xl font-bold text-red-600">
                     {formatCurrency(summaryStats.publisherCosts)}
                   </p>
@@ -810,7 +811,7 @@ export default function DashboardTemplate({
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Margin</p>
+                  <p className={TAILWIND_CLASSES.formSectionLabel}>Margin</p>
                   <p className="text-lg lg:text-xl font-bold" style={{ color: 'rgb(79, 70, 229)' }}>
                     {formatCurrency(summaryStats.margin)}
                   </p>
@@ -826,7 +827,7 @@ export default function DashboardTemplate({
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Avg Margin %</p>
+                  <p className={TAILWIND_CLASSES.formSectionLabel}>Avg Margin %</p>
                   <p className="text-lg lg:text-xl font-bold text-orange-600">
                     {summaryStats.avgMarginPercentage}%
                   </p>

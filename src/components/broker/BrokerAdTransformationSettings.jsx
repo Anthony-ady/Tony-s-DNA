@@ -53,7 +53,7 @@ export default function BrokerAdTransformationSettings({ data, onUpdateSspConfig
             <div className="flex items-center justify-between p-3 rounded-lg bg-white border border-slate-200">
                 <div className="flex-1">
                     <div className="flex items-center gap-1.5">
-                        <Label className="text-sm font-medium text-slate-700">{label}</Label>
+                        <Label>{label}</Label>
                         {warningText && (
                             <TooltipProvider delayDuration={100}>
                                 <Tooltip>

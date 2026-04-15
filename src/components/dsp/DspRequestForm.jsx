@@ -32,7 +32,7 @@ export default function DspRequestForm({
       <CardContent className="pt-6">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-3">
-            <Label htmlFor="partnerId" className="text-sm font-semibold text-slate-700">
+            <Label htmlFor="partnerId">
               Partner ID
             </Label>
             <Input

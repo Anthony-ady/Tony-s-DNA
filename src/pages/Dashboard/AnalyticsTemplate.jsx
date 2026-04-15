@@ -26,6 +26,8 @@ import { cachedFetch } from '@/utils/apiCache';
 import { formatError } from '@/utils/errorFormatter';
 import { API_ENDPOINTS } from '@/config/api';
 import { formatLargeNumberCompact as formatLargeNumber, formatPercentage, formatEcpm, formatRpbr } from '@/utils/formatters';
+import { cn } from '@/lib/utils';
+import { TAILWIND_CLASSES } from '@/config/theme';
 import AnalyticsFilterMenu from "@/components/AnalyticsFilterMenu";
 import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import jsPDF from 'jspdf';
@@ -3379,7 +3381,7 @@ export default function AnalyticsTemplate({
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">DSP Revenue</p>
+                <p className={TAILWIND_CLASSES.formSectionLabel}>DSP Revenue</p>
                 <p className="text-lg lg:text-xl font-bold text-green-600">{formatCurrency(summaryStatsArg?.totalDSP || summaryStatsArg?.entityRevenue || summaryStatsArg?.totalDspRevenue || 0)}</p>
               </div>
               <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
@@ -3393,7 +3395,7 @@ export default function AnalyticsTemplate({
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Publisher Costs</p>
+                <p className={TAILWIND_CLASSES.formSectionLabel}>Publisher Costs</p>
                 <p className="text-lg lg:text-xl font-bold text-red-600">{formatCurrency(summaryStatsArg?.totalPublisher || summaryStatsArg?.publisherCosts || summaryStatsArg?.totalPublisherRevenue || 0)}</p>
               </div>
               <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center">
@@ -3407,7 +3409,7 @@ export default function AnalyticsTemplate({
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Margin</p>
+                <p className={TAILWIND_CLASSES.formSectionLabel}>Margin</p>
                 <p className="text-lg lg:text-xl font-bold" style={{ color: 'rgb(79, 70, 229)' }}>{formatCurrency((summaryStatsArg?.totalMargin ?? summaryStatsArg?.margin ?? summaryStatsArg?.totalMargin) || 0)}</p>
               </div>
               <div className="w-8 h-8 bg-gradient-to-br from-[rgb(75,99,226)] to-purple-600 rounded-lg flex items-center justify-center">
@@ -3421,7 +3423,7 @@ export default function AnalyticsTemplate({
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Avg Margin %</p>
+                <p className={TAILWIND_CLASSES.formSectionLabel}>Avg Margin %</p>
                 <p className="text-lg lg:text-xl font-bold text-orange-600">{(summaryStatsArg?.marginPercentage ?? summaryStatsArg?.avgMarginPercentage ?? summaryStatsArg?.avgMarginPercentage ?? 0).toFixed ? (summaryStatsArg?.marginPercentage ?? summaryStatsArg?.avgMarginPercentage ?? summaryStatsArg?.avgMarginPercentage ?? 0).toFixed(2) : (summaryStatsArg?.marginPercentage ?? summaryStatsArg?.avgMarginPercentage ?? summaryStatsArg?.avgMarginPercentage ?? 0)}%</p>
               </div>
               <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
@@ -3563,12 +3565,12 @@ export default function AnalyticsTemplate({
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div>
                       {!location.pathname.includes('DealAnalytics') && (
-                        <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Revenue Snapshot</div>
+                        <div className={cn(TAILWIND_CLASSES.formSectionLabel, 'mb-3')}>Revenue Snapshot</div>
                       )}
                       <div className="grid grid-cols-2 gap-3">
                         <div className="p-3 rounded-lg border" style={{ backgroundColor: 'rgb(240, 253, 244)', borderColor: 'rgb(187, 247, 208)' }}>
                           <div className="flex items-start justify-between mb-1">
-                            <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(20, 83, 45)' }}>DSP Revenue</div>
+                            <div className={cn(TAILWIND_CLASSES.formSectionLabel)} style={{ color: 'rgb(20, 83, 45)' }}>DSP Revenue</div>
                             <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgb(220, 252, 231)', color: 'rgb(20, 83, 45)' }}>
                               <DollarSign className="w-3.5 h-3.5" />
                             </div>
@@ -3580,7 +3582,7 @@ export default function AnalyticsTemplate({
 
                         <div className="p-3 rounded-lg border" style={{ backgroundColor: 'rgb(255, 241, 242)', borderColor: 'rgb(254, 202, 202)' }}>
                           <div className="flex items-start justify-between mb-1">
-                            <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(153, 27, 27)' }}>Publisher Costs</div>
+                            <div className={cn(TAILWIND_CLASSES.formSectionLabel)} style={{ color: 'rgb(153, 27, 27)' }}>Publisher Costs</div>
                             <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgb(254, 226, 226)', color: 'rgb(153, 27, 27)' }}>
                               <TrendingDown className="w-3.5 h-3.5" />
                             </div>
@@ -3592,7 +3594,7 @@ export default function AnalyticsTemplate({
 
                         <div className="p-3 rounded-lg border" style={{ backgroundColor: 'rgb(239, 246, 255)', borderColor: 'rgb(191, 219, 254)' }}>
                           <div className="flex items-start justify-between mb-1">
-                            <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(30, 64, 175)' }}>ADY Margin</div>
+                            <div className={cn(TAILWIND_CLASSES.formSectionLabel)} style={{ color: 'rgb(30, 64, 175)' }}>ADY Margin</div>
                             <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgb(219, 234, 254)', color: 'rgb(30, 64, 175)' }}>
                               <PieChartIcon className="w-3.5 h-3.5" />
                             </div>
@@ -3604,7 +3606,7 @@ export default function AnalyticsTemplate({
 
                         <div className="p-3 rounded-lg border" style={{ backgroundColor: 'rgb(250, 245, 255)', borderColor: 'rgb(221, 214, 254)' }}>
                           <div className="flex items-start justify-between mb-1">
-                            <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(88, 28, 135)' }}>Avg Margin</div>
+                            <div className={cn(TAILWIND_CLASSES.formSectionLabel)} style={{ color: 'rgb(88, 28, 135)' }}>Avg Margin</div>
                             <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgb(243, 232, 255)', color: 'rgb(88, 28, 135)' }}>
                               <Percent className="w-3.5 h-3.5" />
                             </div>
@@ -3616,7 +3618,7 @@ export default function AnalyticsTemplate({
 
                         <div className="p-3 rounded-lg border" style={{ backgroundColor: 'rgb(255, 251, 235)', borderColor: 'rgb(254, 240, 138)' }}>
                           <div className="flex items-start justify-between mb-1">
-                            <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(113, 63, 18)' }}>Impressions</div>
+                            <div className={cn(TAILWIND_CLASSES.formSectionLabel)} style={{ color: 'rgb(113, 63, 18)' }}>Impressions</div>
                             <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgb(254, 240, 138)', color: 'rgb(113, 63, 18)' }}>
                               <BarChart3 className="w-3.5 h-3.5" />
                             </div>
@@ -3628,7 +3630,7 @@ export default function AnalyticsTemplate({
 
                         <div className="p-3 rounded-lg border" style={{ backgroundColor: 'rgb(243, 232, 255)', borderColor: 'rgb(221, 214, 254)' }}>
                           <div className="flex items-start justify-between mb-1">
-                            <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(88, 28, 135)' }}>Visible Impressions</div>
+                            <div className={cn(TAILWIND_CLASSES.formSectionLabel)} style={{ color: 'rgb(88, 28, 135)' }}>Visible Impressions</div>
                             <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgb(237, 233, 254)', color: 'rgb(88, 28, 135)' }}>
                               <Activity className="w-3.5 h-3.5" />
                             </div>
@@ -3642,12 +3644,12 @@ export default function AnalyticsTemplate({
 
                     <div>
                       {!location.pathname.includes('DealAnalytics') && (
-                        <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Performance Metrics</div>
+                        <div className={cn(TAILWIND_CLASSES.formSectionLabel, 'mb-3')}>Performance Metrics</div>
                       )}
                       <div className="grid grid-cols-2 gap-3">
                         <div className="p-3 rounded-lg border" style={{ backgroundColor: 'rgb(220, 252, 231)', borderColor: 'rgb(134, 239, 172)' }}>
                           <div className="flex items-start justify-between mb-1">
-                            <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(22, 101, 52)' }}>Viewability Rate</div>
+                            <div className={cn(TAILWIND_CLASSES.formSectionLabel)} style={{ color: 'rgb(22, 101, 52)' }}>Viewability Rate</div>
                             <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgb(187, 247, 208)', color: 'rgb(22, 101, 52)' }}>
                               <Percent className="w-3.5 h-3.5" />
                             </div>
@@ -3659,7 +3661,7 @@ export default function AnalyticsTemplate({
 
                         <div className="p-3 rounded-lg border" style={{ backgroundColor: 'rgb(255, 251, 235)', borderColor: 'rgb(254, 240, 138)' }}>
                           <div className="flex items-start justify-between mb-1">
-                            <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(113, 63, 18)' }}>RPBR/M</div>
+                            <div className={cn(TAILWIND_CLASSES.formSectionLabel)} style={{ color: 'rgb(113, 63, 18)' }}>RPBR/M</div>
                             <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgb(254, 240, 138)', color: 'rgb(113, 63, 18)' }}>
                               <Gauge className="w-3.5 h-3.5" />
                             </div>
@@ -3678,7 +3680,7 @@ export default function AnalyticsTemplate({
 
                         <div className="p-3 rounded-lg border" style={{ backgroundColor: 'rgb(240, 249, 255)', borderColor: 'rgb(186, 230, 253)' }}>
                           <div className="flex items-start justify-between mb-1">
-                            <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(7, 89, 133)' }}>eCPM Advertiser</div>
+                            <div className={cn(TAILWIND_CLASSES.formSectionLabel)} style={{ color: 'rgb(7, 89, 133)' }}>eCPM Advertiser</div>
                             <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgb(224, 242, 254)', color: 'rgb(7, 89, 133)' }}>
                               <Activity className="w-3.5 h-3.5" />
                             </div>
@@ -3697,7 +3699,7 @@ export default function AnalyticsTemplate({
 
                         <div className="p-3 rounded-lg border" style={{ backgroundColor: 'rgb(240, 253, 250)', borderColor: 'rgb(153, 246, 228)' }}>
                           <div className="flex items-start justify-between mb-1">
-                            <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(15, 118, 110)' }}>eCPM Publisher</div>
+                            <div className={cn(TAILWIND_CLASSES.formSectionLabel)} style={{ color: 'rgb(15, 118, 110)' }}>eCPM Publisher</div>
                             <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgb(204, 251, 241)', color: 'rgb(15, 118, 110)' }}>
                               <Activity className="w-3.5 h-3.5" />
                             </div>
@@ -3716,7 +3718,7 @@ export default function AnalyticsTemplate({
 
                         <div className="p-3 rounded-lg border" style={{ backgroundColor: 'rgb(238, 242, 255)', borderColor: 'rgb(199, 210, 254)' }}>
                           <div className="flex items-start justify-between mb-1">
-                            <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(49, 46, 129)' }}>Win Rate</div>
+                            <div className={cn(TAILWIND_CLASSES.formSectionLabel)} style={{ color: 'rgb(49, 46, 129)' }}>Win Rate</div>
                             <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgb(224, 231, 255)', color: 'rgb(49, 46, 129)' }}>
                               <Percent className="w-3.5 h-3.5" />
                             </div>
@@ -3735,7 +3737,7 @@ export default function AnalyticsTemplate({
 
                         <div className="p-3 rounded-lg border" style={{ backgroundColor: 'rgb(241, 245, 249)', borderColor: 'rgb(203, 213, 225)' }}>
                           <div className="flex items-start justify-between mb-1">
-                            <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(51, 65, 85)' }}>Fill Rate</div>
+                            <div className={cn(TAILWIND_CLASSES.formSectionLabel)} style={{ color: 'rgb(51, 65, 85)' }}>Fill Rate</div>
                             <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgb(226, 232, 240)', color: 'rgb(51, 65, 85)' }}>
                               <Percent className="w-3.5 h-3.5" />
                             </div>

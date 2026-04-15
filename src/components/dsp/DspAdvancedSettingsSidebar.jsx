@@ -252,7 +252,7 @@ const JsonEditor = ({ label, value, onSave, isSaving: isParentSaving }) => {
             <div className="flex justify-between items-center">
                 <div className="flex items-center gap-3">
                     <Code className="w-5 h-5 text-slate-500" />
-                    <Label className="text-sm font-semibold text-slate-700">{label}</Label>
+                    <Label>{label}</Label>
                 </div>
                 {!isEditing && (
                     <Button size="sm" variant="ghost" onClick={() => setIsEditing(true)}><Edit3 className="w-4 h-4 text-slate-500" /></Button>
@@ -355,7 +355,7 @@ const CreativeScanEditor = ({ value, onSave, isSaving: isParentSaving }) => {
             <div className="flex justify-between items-center">
                 <div className="flex items-center gap-3">
                     <Scan className="w-5 h-5 text-slate-500" />
-                    <Label className="text-sm font-semibold text-slate-700">Creative Scan</Label>
+                    <Label>Creative Scan</Label>
                 </div>
                 <div className={`flex items-center gap-2 px-3 py-1.5 rounded-md ${isEnabled ? 'bg-green-100' : 'bg-red-100'}`}>
                     <Switch 
@@ -479,7 +479,7 @@ const CookieSyncIdsEditor = ({ value, onSave, isSaving: isParentSaving }) => {
         <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-200 space-y-3">
             <div className="flex items-center gap-3">
                 <Link2 className="w-5 h-5 text-slate-500 shrink-0" />
-                <Label className="text-sm font-semibold text-slate-700">Cookie Sync IDs</Label>
+                <Label>Cookie Sync IDs</Label>
                 {loadingNames && <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-400" />}
             </div>
 

@@ -227,7 +227,7 @@ const dbg = {
 
                 {/* Ad Kind (Ad Type) selection */}
                 <div className="space-y-3">
-                    <Label className="text-sm font-semibold text-slate-700">Ad Type</Label>
+                    <Label>Ad Type</Label>
                     <Select 
                         value={formData.kind} 
                         onValueChange={(value) => {
@@ -256,7 +256,7 @@ const dbg = {
                 {/* Traffic Type (Site/App) selection */}
                 {formData.kind && (
                     <div className="space-y-3">
-                        <Label className="text-sm font-semibold text-slate-700">Traffic Types</Label>
+                        <Label>Traffic Types</Label>
                         <div className="flex gap-4">
 
                             {/* Site Traffic toggle */}
@@ -269,7 +269,7 @@ const dbg = {
                             >
                                 <Globe className="w-4 h-4 text-[rgb(75,99,226)]" />
                                 <div className="flex-1">
-                                    <Label className="text-sm font-medium">Site Traffic</Label>
+                                    <Label>Site Traffic</Label>
                                     <p className="text-xs text-slate-500">Web traffic</p>
                                 </div>
                                 <div className={`flex items-center gap-2 px-3 py-1.5 rounded-md ${formData.enableSite ? 'bg-green-100' : 'bg-red-100'}`}>
@@ -295,7 +295,7 @@ const dbg = {
                             >
                                 <AppWindow className="w-4 h-4 text-purple-600" />
                                 <div className="flex-1">
-                                    <Label className="text-sm font-medium">App Traffic</Label>
+                                    <Label>App Traffic</Label>
                                     <p className="text-xs text-slate-500">Mobile app traffic</p>
                                 </div>
                                 <div className={`flex items-center gap-2 px-3 py-1.5 rounded-md ${formData.enableApp ? 'bg-green-100' : 'bg-red-100'}`}>
@@ -325,7 +325,7 @@ const dbg = {
                 {(formData.kind === 'AD_TRAFFIC' || formData.kind === 'AD_VIDEO') && 
                  (formData.enableSite || formData.enableApp) && (
                     <div className="space-y-3">
-                        <Label className="text-sm font-semibold text-slate-700">Native Version</Label>
+                        <Label>Native Version</Label>
                         <Select 
                             value={formData.connectorContent}
                             onValueChange={(value) => setFormData(prev => ({...prev, connectorContent: value}))}
@@ -350,7 +350,7 @@ const dbg = {
                         <div className="font-semibold text-slate-700 text-xs">Native (serialization)</div>
                         <div className="grid gap-3 sm:grid-cols-2">
                             <div className="space-y-2">
-                                <Label className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
+                                <Label className="flex items-center gap-1.5">
                                     <LayoutTemplate className="w-3.5 h-3.5" /> Deserializer
                                 </Label>
                                 <Select
@@ -369,7 +369,7 @@ const dbg = {
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
+                                <Label className="flex items-center gap-1.5">
                                     <FileCode className="w-3.5 h-3.5" /> Serializer
                                 </Label>
                                 <Select
@@ -432,7 +432,7 @@ const dbg = {
                     <>
                         {/* Countries input */}
                         <div className="space-y-3">
-                            <Label className="text-sm font-semibold text-slate-700">
+                            <Label>
                                 Countries (Optional)
                             </Label>
                             <Input
@@ -448,7 +448,7 @@ const dbg = {
 
                         {/* Device selection */}
                         <div className="space-y-3">
-                            <Label className="text-sm font-semibold text-slate-700">
+                            <Label>
                                 Target Devices
                             </Label>
                             <div className="flex flex-wrap gap-2">
@@ -472,7 +472,7 @@ const dbg = {
                         {/* User Synced Only toggle */}
                         <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
                             <div>
-                                <Label className="text-sm font-medium text-slate-700">
+                                <Label>
                                     Send only synced users
                                 </Label>
                                 <p className="text-xs text-slate-500">
@@ -494,7 +494,7 @@ const dbg = {
                         {/* Deals Only toggle */}
                         <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
                             <div>
-                                <Label className="text-sm font-medium text-slate-700">
+                                <Label>
                                     Deals only
                                 </Label>
                                 <p className="text-xs text-slate-500">

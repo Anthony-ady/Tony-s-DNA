@@ -427,7 +427,7 @@ export default function EditUser() {
                 </>
               ) : (
                 <>
-                  <Label className="text-slate-600">Blocked</Label>
+                  <Label>Blocked</Label>
                   <span className="text-sm text-slate-500">{userData.Blocked ? "Yes" : "No"}</span>
                   <span className="text-xs text-slate-400">(only Power Users can change this)</span>
                 </>

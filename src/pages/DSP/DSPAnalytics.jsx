@@ -18,6 +18,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSearchParams } from "react-router-dom";
 import { API_ENDPOINTS } from "@/config/api";
 import { formatCurrency as formatCurrencyValue, formatCurrencyChart, formatEcpm, formatRpbr, formatLargeNumber, formatPercentage } from "@/utils/formatters";
+import { cn } from "@/lib/utils";
+import { TAILWIND_CLASSES } from "@/config/theme";
 
 export default function DSPAnalytics() {
   const formatCurrency = formatCurrencyValue;
@@ -657,7 +659,7 @@ export default function DSPAnalytics() {
             <CardContent className="p-6">
           <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">DSP Revenue</p>
+                  <p className={TAILWIND_CLASSES.formSectionLabel}>DSP Revenue</p>
                   <p className="text-lg lg:text-xl font-bold text-green-600">{formatCurrencyFn(summaryStats.totalDspRevenue)}</p>
                   <div className="text-sm text-slate-500 mt-1">
                     Yesterday: {formatCurrencyFn(summaryStats.yesterdayTotalDspRevenue || 0)}
@@ -674,7 +676,7 @@ export default function DSPAnalytics() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Publisher Costs</p>
+                  <p className={TAILWIND_CLASSES.formSectionLabel}>Publisher Costs</p>
                   <p className="text-lg lg:text-xl font-bold text-red-600">{formatCurrencyFn(summaryStats.totalPublisherRevenue)}</p>
                   <div className="text-sm text-slate-500 mt-1">
                     Yesterday: {formatCurrencyFn(summaryStats.yesterdayTotalPublisherRevenue || 0)}
@@ -691,7 +693,7 @@ export default function DSPAnalytics() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Margin</p>
+                  <p className={TAILWIND_CLASSES.formSectionLabel}>Margin</p>
                   <p className="text-lg lg:text-xl font-bold" style={{ color: 'rgb(79, 70, 229)' }}>{formatCurrencyFn(summaryStats.totalMargin)}</p>
                   <div className="text-sm text-slate-500 mt-1">
                     Yesterday: {formatCurrencyFn(summaryStats.yesterdayTotalMargin || 0)}
@@ -708,7 +710,7 @@ export default function DSPAnalytics() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Avg Margin %</p>
+                  <p className={TAILWIND_CLASSES.formSectionLabel}>Avg Margin %</p>
                   <p className="text-lg lg:text-xl font-bold text-orange-600">{summaryStats.avgMarginPercentage}%</p>
                   <div className="text-sm text-slate-500 mt-1">
                     Yesterday: {(summaryStats.yesterdayAvgMarginPercentage || 0)}%
@@ -729,7 +731,7 @@ export default function DSPAnalytics() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">DSP Revenue</p>
+                    <p className={TAILWIND_CLASSES.formSectionLabel}>DSP Revenue</p>
                   <p className="text-lg lg:text-xl font-bold text-green-600">{formatCurrencyFn(summaryStats.totalDspRevenue)}</p>
                   </div>
                   <div className="w-8 h-8 bg-gradient-to-br from-green-100 to-green-200 rounded-lg flex items-center justify-center">
@@ -743,7 +745,7 @@ export default function DSPAnalytics() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Publisher Costs</p>
+                    <p className={TAILWIND_CLASSES.formSectionLabel}>Publisher Costs</p>
                   <p className="text-lg lg:text-xl font-bold text-red-600">{formatCurrencyFn(summaryStats.totalPublisherRevenue)}</p>
                   </div>
                   <div className="w-8 h-8 bg-gradient-to-br from-red-100 to-red-200 rounded-lg flex items-center justify-center">
@@ -757,7 +759,7 @@ export default function DSPAnalytics() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Margin</p>
+                    <p className={TAILWIND_CLASSES.formSectionLabel}>Margin</p>
                   <p className="text-lg lg:text-xl font-bold" style={{ color: 'rgb(79, 70, 229)' }}>{formatCurrencyFn(summaryStats.totalMargin)}</p>
                   </div>
                   <div className="w-8 h-8 bg-gradient-to-br from-purple-100 to-purple-200 rounded-lg flex items-center justify-center">
@@ -771,7 +773,7 @@ export default function DSPAnalytics() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Avg Margin %</p>
+                    <p className={TAILWIND_CLASSES.formSectionLabel}>Avg Margin %</p>
                     <p className="text-lg lg:text-xl font-bold text-orange-600">{summaryStats.avgMarginPercentage}%</p>
                   </div>
                   <div className="w-8 h-8 bg-gradient-to-br from-orange-100 to-orange-200 rounded-lg flex items-center justify-center">
@@ -939,7 +941,7 @@ export default function DSPAnalytics() {
                   <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                     {/* Impressions */}
                     <div className="p-4 rounded-lg border" style={{ backgroundColor: 'rgb(239, 246, 255)', borderColor: 'rgb(191, 219, 254)' }}>
-                      <div className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'rgb(30, 64, 175)' }}>Impressions</div>
+                      <div className={cn(TAILWIND_CLASSES.formSectionLabel, 'mb-2')} style={{ color: 'rgb(30, 64, 175)' }}>Impressions</div>
                       <div className="text-lg font-bold" style={{ color: 'rgb(29, 78, 216)' }}>
                         {formatLargeNumber(
                           analyticsData.reduce((sum, item) => sum + (item.network_operations_impressions || 0), 0)
@@ -949,7 +951,7 @@ export default function DSPAnalytics() {
 
                     {/* eCPM Publisher */}
                     <div className="p-4 rounded-lg border" style={{ backgroundColor: 'rgb(240, 253, 244)', borderColor: 'rgb(187, 247, 208)' }}>
-                      <div className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'rgb(20, 83, 45)' }}>eCPM Publisher</div>
+                      <div className={cn(TAILWIND_CLASSES.formSectionLabel, 'mb-2')} style={{ color: 'rgb(20, 83, 45)' }}>eCPM Publisher</div>
                       <div className="text-lg font-bold" style={{ color: 'rgb(22, 101, 52)' }}>
                         {(() => {
                           const totalImpressions = analyticsData.reduce((sum, item) => sum + (item.network_operations_impressions || 0), 0);
@@ -964,7 +966,7 @@ export default function DSPAnalytics() {
 
                     {/* RPBR/M */}
                     <div className="p-4 rounded-lg border" style={{ backgroundColor: 'rgb(250, 245, 255)', borderColor: 'rgb(221, 214, 254)' }}>
-                      <div className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'rgb(88, 28, 135)' }}>RPBR/M</div>
+                      <div className={cn(TAILWIND_CLASSES.formSectionLabel, 'mb-2')} style={{ color: 'rgb(88, 28, 135)' }}>RPBR/M</div>
                       <div className="text-lg font-bold" style={{ color: 'rgb(109, 40, 217)' }}>
                         {(() => {
                           const totalBidRequests = analyticsData.reduce((sum, item) => sum + (item.network_operations_bid_requests || 0), 0);
@@ -979,7 +981,7 @@ export default function DSPAnalytics() {
 
                     {/* Win Rate */}
                     <div className="p-4 rounded-lg border" style={{ backgroundColor: 'rgb(255, 251, 235)', borderColor: 'rgb(254, 240, 138)' }}>
-                      <div className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'rgb(113, 63, 18)' }}>Win Rate</div>
+                      <div className={cn(TAILWIND_CLASSES.formSectionLabel, 'mb-2')} style={{ color: 'rgb(113, 63, 18)' }}>Win Rate</div>
                       <div className="text-lg font-bold" style={{ color: 'rgb(146, 64, 14)' }}>
                         {(() => {
                           const totalBidResponses = analyticsData.reduce((sum, item) => sum + (item.network_operations_bid_responses || 0), 0);
@@ -994,7 +996,7 @@ export default function DSPAnalytics() {
 
                     {/* Fill Rate */}
                     <div className="p-4 rounded-lg border" style={{ backgroundColor: 'rgb(255, 241, 242)', borderColor: 'rgb(254, 202, 202)' }}>
-                      <div className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'rgb(153, 27, 27)' }}>Fill Rate</div>
+                      <div className={cn(TAILWIND_CLASSES.formSectionLabel, 'mb-2')} style={{ color: 'rgb(153, 27, 27)' }}>Fill Rate</div>
                       <div className="text-lg font-bold" style={{ color: 'rgb(185, 28, 28)' }}>
                         {(() => {
                           const totalBidRequests = analyticsData.reduce((sum, item) => sum + (item.network_operations_bid_requests || 0), 0);

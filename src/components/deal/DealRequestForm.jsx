@@ -32,7 +32,7 @@ export default function DealRequestForm({
       <CardContent className="pt-6">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-3">
-            <Label htmlFor="dealId" className="text-sm font-semibold text-slate-700">
+            <Label htmlFor="dealId">
               Deal ID
             </Label>
             <Input

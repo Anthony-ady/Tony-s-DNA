@@ -52,4 +52,9 @@ export const TAILWIND_CLASSES = {
     'inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(75,99,226)]/35 focus-visible:ring-offset-2',
   toggleChipActive: 'bg-[rgb(75,99,226)] text-white border-transparent shadow-sm',
   toggleChipInactive: 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50',
+  /**
+   * Uppercase section caption for form blocks (same family as Inventory Directness on Edit Company).
+   * Use on `<Label>` — merges with default Label styles via `cn`.
+   */
+  formSectionLabel: 'text-xs font-medium uppercase tracking-wide text-slate-600',
 };

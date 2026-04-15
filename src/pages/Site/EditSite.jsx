@@ -1142,7 +1142,7 @@ const EditSite = () => {
                                     onCheckedChange={() => toggleIABCode(mainCode)}
                                     className="data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
                                   />
-                                  <Label htmlFor={`iab-${mainCode}`} className="text-sm cursor-pointer text-emerald-900">
+                                  <Label htmlFor={`iab-${mainCode}`} className="cursor-pointer text-emerald-900">
                                     {cat.name}{' '}
                                     <span className="text-xs text-emerald-600">(IAB {mainCode.replace(/^IAB/, '')})</span>
                                   </Label>
@@ -1157,7 +1157,7 @@ const EditSite = () => {
                                           onCheckedChange={() => toggleIABCode(child.code)}
                                           className="data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
                                         />
-                                        <Label htmlFor={`iab-${child.code}`} className="text-xs cursor-pointer truncate text-emerald-900" title={child.code}>
+                                        <Label htmlFor={`iab-${child.code}`} className="cursor-pointer truncate text-emerald-900" title={child.code}>
                                           {child.name}{' '}
                                           <span className="text-xs text-emerald-600">({child.code.replace(/^IAB/, 'IAB ')})</span>
                                         </Label>
@@ -1349,7 +1349,7 @@ const EditSite = () => {
                                     onCheckedChange={() => toggleIABExclusion(mainCode)}
                                     className="data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600"
                                   />
-                                  <Label htmlFor={`iab-excl-${mainCode}`} className="text-sm cursor-pointer text-red-900">
+                                  <Label htmlFor={`iab-excl-${mainCode}`} className="cursor-pointer text-red-900">
                                     {cat.name}{' '}
                                     <span className="text-xs text-red-600">(IAB {mainCode.replace(/^IAB/, '')})</span>
                                   </Label>
@@ -1364,7 +1364,7 @@ const EditSite = () => {
                                           onCheckedChange={() => toggleIABExclusion(child.code)}
                                           className="data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600"
                                         />
-                                        <Label htmlFor={`iab-excl-${child.code}`} className="text-xs cursor-pointer truncate text-red-900" title={child.code}>
+                                        <Label htmlFor={`iab-excl-${child.code}`} className="cursor-pointer truncate text-red-900" title={child.code}>
                                           {child.name}{' '}
                                           <span className="text-xs text-red-600">({child.code.replace(/^IAB/, 'IAB ')})</span>
                                         </Label>

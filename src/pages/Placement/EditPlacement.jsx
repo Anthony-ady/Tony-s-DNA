@@ -646,18 +646,6 @@ const EditPlacement = () => {
                     {placementData.SspConfig.Disabled ? 'OFF' : 'ON'}
                   </button>
                 )}
-                {placementData?.Access && (
-                  <span className={cn(
-                    'inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium border',
-                    placementData.Access === 'DISABLED'
-                      ? 'bg-red-50 text-red-600 border-red-200'
-                      : placementData.Access === 'ALL'
-                        ? 'bg-green-50 text-green-600 border-green-200'
-                        : 'bg-slate-50 text-slate-600 border-slate-200'
-                  )}>
-                    Access: {placementData.Access}
-                  </span>
-                )}
                 {placementData?.DistributionChannelKind && (
                   <span className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium bg-[rgb(59,76,164)]/10 text-[rgb(59,76,164)] border border-[rgb(59,76,164)]/20">
                     Channel: {placementData.DistributionChannelKind}
@@ -827,21 +815,23 @@ const EditPlacement = () => {
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold text-slate-900">Placement Configuration</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="distributionChannelKind">Distribution Channel Kind</Label>
-                        <Select
-                          value={placementData.DistributionChannelKind || 'SITE'}
-                          onValueChange={(value) => setPlacementData({...placementData, DistributionChannelKind: value})}
-                        >
-                          <SelectTrigger className="bg-white">
-                            <SelectValue placeholder="Select distribution channel kind" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="SITE">SITE</SelectItem>
-                            <SelectItem value="APP">APP</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      <div className="flex flex-wrap gap-2">
+                          {['SITE', 'APP'].map((ch) => {
+                            const current = placementData.DistributionChannelKind || 'SITE';
+                            return (
+                              <button
+                                key={ch}
+                                type="button"
+                                className={toggleChipClassName(current === ch)}
+                                onClick={() =>
+                                  setPlacementData({ ...placementData, DistributionChannelKind: ch })
+                                }
+                              >
+                                {ch}
+                              </button>
+                            );
+                          })}
+                        </div>
                     </div>
                   </div>
 
@@ -849,32 +839,27 @@ const EditPlacement = () => {
 
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold text-slate-900">Sources</h3>
-                    <div className="space-y-2">
-                      <Label>Demand Sources</Label>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="flex flex-wrap gap-2">
                         {['SSP', 'ADSERVER'].map((source) => {
                           const isChecked = placementData.Sources?.includes(source) || false;
+                          const label = source === 'SSP' ? 'Programmatic' : 'Direct';
                           return (
-                            <div key={source} className="flex items-center space-x-3">
-                              <Checkbox
-                                id={`source-${source}`}
-                                checked={isChecked}
-                                onCheckedChange={(checked) => {
-                                  const currentSources = placementData.Sources || [];
-                                  const newSources = checked
-                                    ? [...currentSources, source]
-                                    : currentSources.filter(s => s !== source);
-                                  setPlacementData({...placementData, Sources: newSources});
-                                }}
-                                className="h-5 w-5 border-2 border-slate-300 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
-                              />
-                              <Label htmlFor={`source-${source}`} className="text-sm font-medium cursor-pointer">
-                                {source === 'SSP' ? 'Programmatic' : 'Direct'}
-                              </Label>
-                            </div>
+                            <button
+                              key={source}
+                              type="button"
+                              className={toggleChipClassName(isChecked)}
+                              onClick={() => {
+                                const currentSources = placementData.Sources || [];
+                                const newSources = isChecked
+                                  ? currentSources.filter((s) => s !== source)
+                                  : [...currentSources, source];
+                                setPlacementData({ ...placementData, Sources: newSources });
+                              }}
+                            >
+                              {label}
+                            </button>
                           );
                         })}
-                      </div>
                     </div>
                   </div>
 
@@ -1260,30 +1245,6 @@ const EditPlacement = () => {
                       </div>
                     </div>
                   </div>
-
-                  <Separator />
-
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-slate-900">Auction Parameters</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="auctionTimeout">Auction Timeout</Label>
-                        <Input
-                          id="auctionTimeout"
-                          type="number"
-                          value={placementData.SspConfig?.AuctionTimeout || 0}
-                          onChange={(e) => setPlacementData({
-                                ...placementData,
-                                SspConfig: {
-                                  ...placementData.SspConfig,
-                              AuctionTimeout: parseInt(e.target.value) || 0
-                            }
-                          })}
-                          className="bg-white"
-                        />
-                      </div>
-                    </div>
-                  </div>
                 </CardContent>
               </Card>
             )}
@@ -1565,7 +1526,7 @@ const EditPlacement = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                           {Object.entries(BANNER_SIZES).map(([category, sizes]) => (
                             <div key={category} className="space-y-3">
-                              <h4 className="text-sm font-semibold text-slate-700 uppercase tracking-wide border-b border-slate-200 pb-2">
+                              <h4 className={cn(TAILWIND_CLASSES.formSectionLabel, 'border-b border-slate-200 pb-2')}>
                                 {category}
                               </h4>
                               <div className="space-y-2">
@@ -1920,7 +1881,7 @@ const EditPlacement = () => {
                                       }}
                                       className="data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600"
                                     />
-                                    <Label htmlFor={`placement-iab-excl-${mainCode}`} className="text-sm cursor-pointer text-red-900">
+                                    <Label htmlFor={`placement-iab-excl-${mainCode}`} className="cursor-pointer text-red-900">
                                       {cat.name}{' '}
                                       <span className="text-xs text-red-600">(IAB {mainCode.replace(/^IAB/, '')})</span>
                                     </Label>
@@ -1938,7 +1899,7 @@ const EditPlacement = () => {
                                             }}
                                             className="data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600"
                                           />
-                                          <Label htmlFor={`placement-iab-excl-${child.code}`} className="text-xs cursor-pointer truncate text-red-900" title={child.code}>
+                                          <Label htmlFor={`placement-iab-excl-${child.code}`} className="cursor-pointer truncate text-red-900" title={child.code}>
                                             {child.name}{' '}
                                             <span className="text-xs text-red-600">({child.code.replace(/^IAB/, 'IAB ')})</span>
                                           </Label>

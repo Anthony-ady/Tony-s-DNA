@@ -9,6 +9,8 @@ import { API_ENDPOINTS } from '@/config/api';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
+import { TAILWIND_CLASSES } from '@/config/theme';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
@@ -1060,7 +1062,7 @@ export default function Layout({ children, currentPageName }) {
                         {openSubMenu === 'Monitoring' && dashboardSubItems.map((subItem) => (
                             subItem.children ? (
                                 <div key={subItem.name} className="space-y-2">
-                                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 px-3">
+                                    <div className={cn('flex items-center gap-2 px-3', TAILWIND_CLASSES.formSectionLabel)}>
                                         {subItem.icon}
                                         <span>{subItem.name}</span>
                                     </div>
@@ -1106,7 +1108,7 @@ export default function Layout({ children, currentPageName }) {
                         {openSubMenu === 'Profitability' && profitabilitySubItems.map((subItem) => (
                             subItem.children ? (
                                 <div key={subItem.name} className="space-y-2">
-                                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 px-3">
+                                    <div className={cn('flex items-center gap-2 px-3', TAILWIND_CLASSES.formSectionLabel)}>
                                         {subItem.icon}
                                         <span>{subItem.name}</span>
                                     </div>
@@ -1153,7 +1155,7 @@ export default function Layout({ children, currentPageName }) {
                             if (subItem.children) {
                                 return (
                                 <div key={subItem.name} className="space-y-2">
-                                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 px-3">
+                                    <div className={cn('flex items-center gap-2 px-3', TAILWIND_CLASSES.formSectionLabel)}>
                                         {subItem.icon}
                                         <span>{subItem.name}</span>
                                     </div>
@@ -1256,7 +1258,7 @@ export default function Layout({ children, currentPageName }) {
                         {openSubMenu === 'Manager' && managerSubItems.map((item) => (
                             item.children ? (
                                 <div key={item.name} className="space-y-2">
-                                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 px-3">
+                                    <div className={cn('flex items-center gap-2 px-3', TAILWIND_CLASSES.formSectionLabel)}>
                                         {item.icon}
                                         <span>{item.name}</span>
                                     </div>
@@ -1644,7 +1646,7 @@ export default function Layout({ children, currentPageName }) {
                                                     {dashboardSubItems.map((subItem) =>
                                                         subItem.children ? (
                                                             <div key={subItem.name} className="space-y-1">
-                                                                <div className="flex items-center gap-2 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                                                <div className={cn('flex items-center gap-2 px-3 py-1', TAILWIND_CLASSES.formSectionLabel)}>
                                                                     {subItem.icon}
                                                                     <span>{subItem.name}</span>
                                                                 </div>
@@ -1699,7 +1701,7 @@ export default function Layout({ children, currentPageName }) {
                                                     {profitabilitySubItems.map((subItem) =>
                                                         subItem.children ? (
                                                             <div key={subItem.name} className="space-y-1">
-                                                                <div className="flex items-center gap-2 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                                                <div className={cn('flex items-center gap-2 px-3 py-1', TAILWIND_CLASSES.formSectionLabel)}>
                                                                     {subItem.icon}
                                                                     <span>{subItem.name}</span>
                                                                 </div>
@@ -1825,7 +1827,7 @@ export default function Layout({ children, currentPageName }) {
                                                 <div className="ml-8 mt-2 space-y-2 animate-in slide-in-from-left duration-300 ease-out">
                                                     {managerSubItems.map((subGroup) => (
                                                         <div key={subGroup.name} className="space-y-1">
-                                                            <div className="flex items-center gap-2 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                                            <div className={cn('flex items-center gap-2 px-3 py-1', TAILWIND_CLASSES.formSectionLabel)}>
                                                                 {subGroup.icon}
                                                                 <span>{subGroup.name}</span>
                                                             </div>
@@ -1918,7 +1920,7 @@ export default function Layout({ children, currentPageName }) {
                             {/* Realm Filter - only show on specific pages */}
                             {showRealmFilter() && (
                                 <div className="flex items-center gap-2">
-                                    <Label className="text-xs text-slate-500">Realm:</Label>
+                                    <Label>Realm:</Label>
                                     <Popover open={realmPopoverOpen} onOpenChange={setRealmPopoverOpen}>
                                         <PopoverTrigger asChild>
                                             <Button
@@ -1969,7 +1971,7 @@ export default function Layout({ children, currentPageName }) {
                             {(currentPageName === 'Site' || currentPageName === 'Placement' || 
                               currentPageName === 'SiteDashboard' || currentPageName === 'PlacementDashboard') && (
                                 <div className="flex items-center gap-2">
-                                    <Label className="text-xs text-slate-500">Company:</Label>
+                                    <Label>Company:</Label>
                                     <Popover open={companyPopoverOpen} onOpenChange={setCompanyPopoverOpen}>
                                         <PopoverTrigger asChild>
                                             <Button
@@ -2019,7 +2021,7 @@ export default function Layout({ children, currentPageName }) {
                             {/* User Filter (for SalesDashboard only) */}
                             {currentPageName === 'SalesDashboard' && (
                                 <div className="flex items-center gap-2">
-                                    <Label className="text-xs text-slate-500">User:</Label>
+                                    <Label>User:</Label>
                                     <Popover open={userPopoverOpen} onOpenChange={setUserPopoverOpen}>
                                         <PopoverTrigger asChild>
                                             <Button

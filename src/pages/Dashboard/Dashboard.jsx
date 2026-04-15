@@ -41,6 +41,8 @@ import BusinessReviewOverview from "@/components/BusinessReviewOverview";
 import { formatError } from "@/utils/errorFormatter";
 import { API_ENDPOINTS } from "@/config/api";
 import { formatCurrency, formatCurrencyChart, formatLargeNumber, formatEcpm, formatRpbr, formatPercentage } from "@/utils/formatters";
+import { cn } from "@/lib/utils";
+import { TAILWIND_CLASSES } from "@/config/theme";
 
 export default function Dashboard({ useNetworkOpsForDaily = true }) {
   const navigate = useNavigate();
@@ -3104,7 +3106,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
           <CardContent className="p-3 lg:p-5">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">DSP Revenue</p>
+                <p className={TAILWIND_CLASSES.formSectionLabel}>DSP Revenue</p>
                 <p className="text-lg lg:text-xl font-bold text-green-600 mt-1">
                   {formatCurrency(summaryStats.totalAdvertiserSpend)}
                 </p>
@@ -3124,7 +3126,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
           <CardContent className="p-3 lg:p-5">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Publisher Costs</p>
+                <p className={TAILWIND_CLASSES.formSectionLabel}>Publisher Costs</p>
                 <p className="text-lg lg:text-xl font-bold text-red-600 mt-1">
                   {formatCurrency(summaryStats.totalPublisherRevenue)}
                 </p>
@@ -3144,7 +3146,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
           <CardContent className="p-3 lg:p-5">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">ADY Margin</p>
+                <p className={TAILWIND_CLASSES.formSectionLabel}>ADY Margin</p>
                 <p className="text-lg lg:text-xl font-bold mt-1" style={{ color: 'rgb(79, 70, 229)' }}>
                   {formatCurrency(summaryStats.totalMargin)}
                 </p>
@@ -3164,7 +3166,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
           <CardContent className="p-3 lg:p-5">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Avg Margin %</p>
+                        <p className={TAILWIND_CLASSES.formSectionLabel}>Avg Margin %</p>
                         <p className="text-lg lg:text-xl font-bold text-orange-600 mt-1">
                           {summaryStats.avgMarginPercentage}%
                         </p>
@@ -3191,7 +3193,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
                   <CardContent className="p-3 lg:p-5">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">DSP Revenue</p>
+                        <p className={TAILWIND_CLASSES.formSectionLabel}>DSP Revenue</p>
                         <p className="text-lg lg:text-xl font-bold text-green-600 mt-1">
                           {formatCurrency(summaryStats.totalAdvertiserSpend)}
                         </p>
@@ -3207,7 +3209,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
                   <CardContent className="p-3 lg:p-5">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Publisher Costs</p>
+                        <p className={TAILWIND_CLASSES.formSectionLabel}>Publisher Costs</p>
                         <p className="text-lg lg:text-xl font-bold text-red-600 mt-1">
                           {formatCurrency(summaryStats.totalPublisherRevenue)}
                         </p>
@@ -3223,7 +3225,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
                   <CardContent className="p-3 lg:p-5">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">ADY Margin</p>
+                        <p className={TAILWIND_CLASSES.formSectionLabel}>ADY Margin</p>
                         <p className="text-lg lg:text-xl font-bold mt-1" style={{ color: 'rgb(79, 70, 229)' }}>
                           {formatCurrency(summaryStats.totalMargin)}
                         </p>
@@ -3239,7 +3241,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
                   <CardContent className="p-3 lg:p-5">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Avg Margin %</p>
+                        <p className={TAILWIND_CLASSES.formSectionLabel}>Avg Margin %</p>
                         <p className="text-lg lg:text-xl font-bold text-orange-600 mt-1">
                           {summaryStats.avgMarginPercentage}%
                         </p>
@@ -3335,11 +3337,11 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
                       <CardContent className="pt-0">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                           <div>
-                            <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Revenue Snapshot</div>
+                            <div className={cn(TAILWIND_CLASSES.formSectionLabel, 'mb-3')}>Revenue Snapshot</div>
                             <div className="grid grid-cols-2 gap-3">
                               <div className="p-3 rounded-lg border" style={{ backgroundColor: 'rgb(240, 253, 244)', borderColor: 'rgb(187, 247, 208)' }}>
                                 <div className="flex items-start justify-between mb-1">
-                                  <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(20, 83, 45)' }}>DSP Revenue</div>
+                                  <div className={cn(TAILWIND_CLASSES.formSectionLabel)} style={{ color: 'rgb(20, 83, 45)' }}>DSP Revenue</div>
                                   <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgb(220, 252, 231)', color: 'rgb(20, 83, 45)' }}>
                                     <DollarSign className="w-3.5 h-3.5" />
                                   </div>
@@ -3351,7 +3353,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
 
                               <div className="p-3 rounded-lg border" style={{ backgroundColor: 'rgb(255, 241, 242)', borderColor: 'rgb(254, 202, 202)' }}>
                                 <div className="flex items-start justify-between mb-1">
-                                  <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(153, 27, 27)' }}>Publisher Costs</div>
+                                  <div className={cn(TAILWIND_CLASSES.formSectionLabel)} style={{ color: 'rgb(153, 27, 27)' }}>Publisher Costs</div>
                                   <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgb(254, 226, 226)', color: 'rgb(153, 27, 27)' }}>
                                     <TrendingDown className="w-3.5 h-3.5" />
                                   </div>
@@ -3363,7 +3365,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
 
                               <div className="p-3 rounded-lg border" style={{ backgroundColor: 'rgb(239, 246, 255)', borderColor: 'rgb(191, 219, 254)' }}>
                                 <div className="flex items-start justify-between mb-1">
-                                  <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(30, 64, 175)' }}>ADY Margin</div>
+                                  <div className={cn(TAILWIND_CLASSES.formSectionLabel)} style={{ color: 'rgb(30, 64, 175)' }}>ADY Margin</div>
                                   <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgb(219, 234, 254)', color: 'rgb(30, 64, 175)' }}>
                                     <PieChartIcon className="w-3.5 h-3.5" />
                                   </div>
@@ -3375,7 +3377,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
 
                               <div className="p-3 rounded-lg border" style={{ backgroundColor: 'rgb(250, 245, 255)', borderColor: 'rgb(221, 214, 254)' }}>
                                 <div className="flex items-start justify-between mb-1">
-                                  <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(88, 28, 135)' }}>Avg Margin</div>
+                                  <div className={cn(TAILWIND_CLASSES.formSectionLabel)} style={{ color: 'rgb(88, 28, 135)' }}>Avg Margin</div>
                                   <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgb(243, 232, 255)', color: 'rgb(88, 28, 135)' }}>
                                     <Percent className="w-3.5 h-3.5" />
                                   </div>
@@ -3387,7 +3389,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
 
                               <div className="p-3 rounded-lg border" style={{ backgroundColor: 'rgb(255, 251, 235)', borderColor: 'rgb(254, 240, 138)' }}>
                                 <div className="flex items-start justify-between mb-1">
-                                  <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(113, 63, 18)' }}>Impressions</div>
+                                  <div className={cn(TAILWIND_CLASSES.formSectionLabel)} style={{ color: 'rgb(113, 63, 18)' }}>Impressions</div>
                                   <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgb(254, 240, 138)', color: 'rgb(113, 63, 18)' }}>
                                     <BarChart3 className="w-3.5 h-3.5" />
                                   </div>
@@ -3401,7 +3403,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
 
                               <div className="p-3 rounded-lg border" style={{ backgroundColor: 'rgb(243, 232, 255)', borderColor: 'rgb(221, 214, 254)' }}>
                                 <div className="flex items-start justify-between mb-1">
-                                  <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(88, 28, 135)' }}>Visible Impressions</div>
+                                  <div className={cn(TAILWIND_CLASSES.formSectionLabel)} style={{ color: 'rgb(88, 28, 135)' }}>Visible Impressions</div>
                                   <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgb(237, 233, 254)', color: 'rgb(88, 28, 135)' }}>
                                     <Activity className="w-3.5 h-3.5" />
                                   </div>
@@ -3416,11 +3418,11 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
                           </div>
 
                           <div>
-                            <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Performance Metrics</div>
+                            <div className={cn(TAILWIND_CLASSES.formSectionLabel, 'mb-3')}>Performance Metrics</div>
                             <div className="grid grid-cols-2 gap-3">
                               <div className="p-3 rounded-lg border" style={{ backgroundColor: 'rgb(220, 252, 231)', borderColor: 'rgb(134, 239, 172)' }}>
                                 <div className="flex items-start justify-between mb-1">
-                                  <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(22, 101, 52)' }}>Viewability Rate</div>
+                                  <div className={cn(TAILWIND_CLASSES.formSectionLabel)} style={{ color: 'rgb(22, 101, 52)' }}>Viewability Rate</div>
                                   <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgb(187, 247, 208)', color: 'rgb(22, 101, 52)' }}>
                                     <Percent className="w-3.5 h-3.5" />
                                   </div>
@@ -3439,7 +3441,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
 
                               <div className="p-3 rounded-lg border" style={{ backgroundColor: 'rgb(255, 247, 237)', borderColor: 'rgb(253, 186, 116)' }}>
                                 <div className="flex items-start justify-between mb-1">
-                                  <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(154, 52, 18)' }}>RPBR/M</div>
+                                  <div className={cn(TAILWIND_CLASSES.formSectionLabel)} style={{ color: 'rgb(154, 52, 18)' }}>RPBR/M</div>
                                   <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgb(255, 237, 213)', color: 'rgb(154, 52, 18)' }}>
                                     <Gauge className="w-3.5 h-3.5" />
                                   </div>
@@ -3458,7 +3460,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
 
                               <div className="p-3 rounded-lg border" style={{ backgroundColor: 'rgb(240, 249, 255)', borderColor: 'rgb(186, 230, 253)' }}>
                                 <div className="flex items-start justify-between mb-1">
-                                  <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(7, 89, 133)' }}>eCPM Advertiser</div>
+                                  <div className={cn(TAILWIND_CLASSES.formSectionLabel)} style={{ color: 'rgb(7, 89, 133)' }}>eCPM Advertiser</div>
                                   <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgb(224, 242, 254)', color: 'rgb(7, 89, 133)' }}>
                                     <Activity className="w-3.5 h-3.5" />
                                   </div>
@@ -3477,7 +3479,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
 
                               <div className="p-3 rounded-lg border" style={{ backgroundColor: 'rgb(240, 253, 250)', borderColor: 'rgb(153, 246, 228)' }}>
                                 <div className="flex items-start justify-between mb-1">
-                                  <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(15, 118, 110)' }}>eCPM Publisher</div>
+                                  <div className={cn(TAILWIND_CLASSES.formSectionLabel)} style={{ color: 'rgb(15, 118, 110)' }}>eCPM Publisher</div>
                                   <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgb(204, 251, 241)', color: 'rgb(15, 118, 110)' }}>
                                     <Activity className="w-3.5 h-3.5" />
                                   </div>
@@ -3496,7 +3498,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
 
                               <div className="p-3 rounded-lg border" style={{ backgroundColor: 'rgb(238, 242, 255)', borderColor: 'rgb(199, 210, 254)' }}>
                                 <div className="flex items-start justify-between mb-1">
-                                  <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(49, 46, 129)' }}>Win Rate</div>
+                                  <div className={cn(TAILWIND_CLASSES.formSectionLabel)} style={{ color: 'rgb(49, 46, 129)' }}>Win Rate</div>
                                   <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgb(224, 231, 255)', color: 'rgb(49, 46, 129)' }}>
                                     <Percent className="w-3.5 h-3.5" />
                                   </div>
@@ -3515,7 +3517,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
 
                               <div className="p-3 rounded-lg border" style={{ backgroundColor: 'rgb(241, 245, 249)', borderColor: 'rgb(203, 213, 225)' }}>
                                 <div className="flex items-start justify-between mb-1">
-                                  <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(51, 65, 85)' }}>Fill Rate</div>
+                                  <div className={cn(TAILWIND_CLASSES.formSectionLabel)} style={{ color: 'rgb(51, 65, 85)' }}>Fill Rate</div>
                                   <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgb(226, 232, 240)', color: 'rgb(51, 65, 85)' }}>
                                     <Percent className="w-3.5 h-3.5" />
                                   </div>
@@ -4076,7 +4078,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                       {/* Impressions */}
                       <div className="p-4 rounded-lg border" style={{ backgroundColor: 'rgb(239, 246, 255)', borderColor: 'rgb(191, 219, 254)' }}>
-                        <div className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'rgb(30, 64, 175)' }}>Impressions</div>
+                        <div className={cn(TAILWIND_CLASSES.formSectionLabel, 'mb-2')} style={{ color: 'rgb(30, 64, 175)' }}>Impressions</div>
                         <div className="text-lg font-bold" style={{ color: 'rgb(29, 78, 216)' }}>
                           {formatLargeNumber(
                             analyticsData.reduce((sum, item) => sum + (item.network_operations_impressions || 0), 0)
@@ -4086,7 +4088,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
 
                       {/* eCPM Publisher */}
                       <div className="p-4 rounded-lg border" style={{ backgroundColor: 'rgb(240, 253, 244)', borderColor: 'rgb(187, 247, 208)' }}>
-                        <div className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'rgb(20, 83, 45)' }}>eCPM Publisher</div>
+                        <div className={cn(TAILWIND_CLASSES.formSectionLabel, 'mb-2')} style={{ color: 'rgb(20, 83, 45)' }}>eCPM Publisher</div>
                         <div className="text-lg font-bold" style={{ color: 'rgb(22, 101, 52)' }}>
                           {(() => {
                             const totalImpressions = analyticsData.reduce((sum, item) => sum + (item.network_operations_impressions || 0), 0);
@@ -4101,7 +4103,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
 
                       {/* RPBR/M */}
                       <div className="p-4 rounded-lg border" style={{ backgroundColor: 'rgb(250, 245, 255)', borderColor: 'rgb(221, 214, 254)' }}>
-                        <div className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'rgb(88, 28, 135)' }}>RPBR/M</div>
+                        <div className={cn(TAILWIND_CLASSES.formSectionLabel, 'mb-2')} style={{ color: 'rgb(88, 28, 135)' }}>RPBR/M</div>
                         <div className="text-lg font-bold" style={{ color: 'rgb(109, 40, 217)' }}>
                           {(() => {
                             const totalBidRequests = analyticsData.reduce((sum, item) => sum + (item.network_operations_bid_requests || 0), 0);
@@ -4116,7 +4118,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
 
                       {/* Win Rate */}
                       <div className="p-4 rounded-lg border" style={{ backgroundColor: 'rgb(255, 251, 235)', borderColor: 'rgb(254, 240, 138)' }}>
-                        <div className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'rgb(113, 63, 18)' }}>Win Rate</div>
+                        <div className={cn(TAILWIND_CLASSES.formSectionLabel, 'mb-2')} style={{ color: 'rgb(113, 63, 18)' }}>Win Rate</div>
                         <div className="text-lg font-bold" style={{ color: 'rgb(146, 64, 14)' }}>
                           {(() => {
                             const totalBidResponses = analyticsData.reduce((sum, item) => sum + (item.network_operations_bid_responses || 0), 0);
@@ -4131,7 +4133,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
 
                       {/* Fill Rate */}
                       <div className="p-4 rounded-lg border" style={{ backgroundColor: 'rgb(255, 241, 242)', borderColor: 'rgb(254, 202, 202)' }}>
-                        <div className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'rgb(153, 27, 27)' }}>Fill Rate</div>
+                        <div className={cn(TAILWIND_CLASSES.formSectionLabel, 'mb-2')} style={{ color: 'rgb(153, 27, 27)' }}>Fill Rate</div>
                         <div className="text-lg font-bold" style={{ color: 'rgb(185, 28, 28)' }}>
                           {(() => {
                             const totalBidRequests = analyticsData.reduce((sum, item) => sum + (item.network_operations_bid_requests || 0), 0);

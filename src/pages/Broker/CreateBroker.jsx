@@ -609,7 +609,7 @@ export default function CreateBroker() {
                   key={key}
                   className="flex items-center justify-between p-3 rounded-lg bg-white border border-slate-200"
                 >
-                  <Label htmlFor={key} className="text-sm font-medium text-slate-700">
+                  <Label htmlFor={key}>
                     {label}
                   </Label>
                   <div

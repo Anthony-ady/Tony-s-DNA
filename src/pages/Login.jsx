@@ -148,7 +148,7 @@ export default function Login() {
           <form onSubmit={handleLogin} className="space-y-4" autoComplete="on">
             {/* Email Field */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="email" variant="body">
                 Email Address *
               </Label>
               <div className="relative">
@@ -174,7 +174,7 @@ export default function Login() {
             {/* Password Field */}
             <div className="space-y-2">
                   <div className="flex items-center justify-between">
-              <Label htmlFor="password" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="password" variant="body">
                 Password *
               </Label>
                     <button

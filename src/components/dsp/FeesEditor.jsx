@@ -64,7 +64,7 @@ const FeesEditor = ({ value, onSave, isSaving: isParentSaving }) => {
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <DollarSign className="w-5 h-5 text-slate-500" />
-                    <Label className="text-sm font-semibold text-slate-900">DSP fee</Label>
+                    <Label>DSP fee</Label>
                 </div>
                 <div className={`flex items-center gap-2 px-3 py-1.5 rounded-md ${isEnabled ? 'bg-green-100' : 'bg-red-100'}`}>
                     <Switch

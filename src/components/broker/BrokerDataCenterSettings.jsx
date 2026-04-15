@@ -143,7 +143,7 @@ export default function BrokerDataCenterSettings({ dataCenters, onUpdate, isSavi
                                 {/* Header with name and default indicator */}
                                 <div className="flex items-center justify-between">
                                     <div className="flex-1">
-                                        <Label className="text-sm font-medium text-slate-700">
+                                        <Label>
                                             {dataCenterNames[dcName] || dcName}
                                         </Label>
                                     </div>
@@ -162,7 +162,7 @@ export default function BrokerDataCenterSettings({ dataCenters, onUpdate, isSavi
 
                                 {/* Enabled/Disabled Control */}
                                 <div className="flex items-center justify-between">
-                                    <Label className="text-sm text-slate-600">Enabled</Label>
+                                    <Label>Enabled</Label>
                                     <div className={`flex items-center gap-2 px-3 py-1.5 rounded-md ${config.Enabled ? 'bg-green-100' : 'bg-red-100'}`}>
                                         <Switch
                                             checked={config.Enabled}
@@ -180,7 +180,7 @@ export default function BrokerDataCenterSettings({ dataCenters, onUpdate, isSavi
                                 <div className="flex items-center justify-between gap-3">
                                     <div className="flex items-center gap-2">
                                         <Zap className="w-4 h-4 text-slate-500" />
-                                        <Label className="text-sm text-slate-600">QPS Limit</Label>
+                                        <Label>QPS Limit</Label>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Input

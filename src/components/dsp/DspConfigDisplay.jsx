@@ -525,7 +525,7 @@ const EndpointEditor = ({ code, url, onSave, onRemove, isSaving: isParentSaving,
             <div className="space-y-3">
                 <div>
                     <div className="flex items-center justify-between mb-2">
-                        <Label className="text-xs font-medium text-slate-600">URL</Label>
+                        <Label>URL</Label>
                         <div className="flex gap-2">
                             {!isEditing && url && (
                                 <Button size="sm" variant="ghost" onClick={handleRemove} className="text-red-500 hover:text-red-700 hover:bg-red-50" disabled={isParentSaving || isSavingLocal}>
@@ -804,7 +804,7 @@ const TargetingRule = ({
                     </div>
 
                     <div className="mt-3">
-                        <Label className="flex items-center gap-2 text-xs font-medium text-slate-600 mb-2">
+                        <Label className="flex items-center gap-2 mb-2">
                             Devices
                             {isParentSaving && <Loader2 className="w-3 h-3 animate-spin" />}
                         </Label>
@@ -844,7 +844,7 @@ const TargetingRule = ({
                 <div>
                     {/* Countries Inclusion */}
                     <div className="flex items-center justify-between mb-2">
-                        <Label className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
+                        <Label className="flex items-center gap-1.5">
                             <PlusCircle className="w-3.5 h-3.5 text-green-600" />
                             Countries Inclusion
                             {isParentSaving && <Loader2 className="w-3 h-3 animate-spin" />}
@@ -883,7 +883,7 @@ const TargetingRule = ({
 
                     {/* Countries Exclusion */}
                     <div className="flex items-center justify-between mt-4 mb-2">
-                        <Label className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
+                        <Label className="flex items-center gap-1.5">
                             <MinusCircle className="w-3.5 h-3.5 text-red-600" />
                             Countries Exclusion
                             {isParentSaving && <Loader2 className="w-3 h-3 animate-spin" />}
@@ -925,7 +925,7 @@ const TargetingRule = ({
                     <div>
                         {/* Site Domains Inclusion */}
                         <div className="flex items-center justify-between mb-2">
-                            <Label className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
+                            <Label className="flex items-center gap-1.5">
                                 <PlusCircle className="w-3.5 h-3.5 text-green-600" />
                                 Site Domains Inclusion
                                 {isParentSaving && <Loader2 className="w-3 h-3 animate-spin" />}
@@ -964,7 +964,7 @@ const TargetingRule = ({
 
                         {/* Site Domains Exclusion */}
                         <div className="flex items-center justify-between mt-4 mb-2">
-                            <Label className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
+                            <Label className="flex items-center gap-1.5">
                                 <MinusCircle className="w-3.5 h-3.5 text-red-600" />
                                 Site Domains Exclusion
                                 {isParentSaving && <Loader2 className="w-3 h-3 animate-spin" />}
@@ -1005,7 +1005,7 @@ const TargetingRule = ({
                     <div>
                         {/* App Bundles Inclusion */}
                         <div className="flex items-center justify-between mb-2">
-                            <Label className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
+                            <Label className="flex items-center gap-1.5">
                                 <PlusCircle className="w-3.5 h-3.5 text-green-600" />
                                 App Bundles Inclusion
                                 {isParentSaving && <Loader2 className="w-3 h-3 animate-spin" />}
@@ -1044,7 +1044,7 @@ const TargetingRule = ({
 
                         {/* App Bundles Exclusion */}
                         <div className="flex items-center justify-between mt-4 mb-2">
-                            <Label className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
+                            <Label className="flex items-center gap-1.5">
                                 <MinusCircle className="w-3.5 h-3.5 text-red-600" />
                                 App Bundles Exclusion
                                 {isParentSaving && <Loader2 className="w-3 h-3 animate-spin" />}
@@ -1083,7 +1083,7 @@ const TargetingRule = ({
 
                         {/* Site Domains Exclusion (APP traffic) */}
                         <div className="flex items-center justify-between mt-4 mb-2">
-                            <Label className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
+                            <Label className="flex items-center gap-1.5">
                                 <MinusCircle className="w-3.5 h-3.5 text-red-600" />
                                 Site Domains Exclusion
                                 {isParentSaving && <Loader2 className="w-3 h-3 animate-spin" />}
@@ -1192,7 +1192,7 @@ const TargetingRule = ({
 
             {/* User Synced Only toggle - bottom left */}
             <div className="flex items-center gap-3 mt-4">
-                <Label className="text-xs font-medium text-slate-600">Send only synced users (buyeruid present)</Label>
+                <Label>Send only synced users (buyeruid present)</Label>
                 <div className={`flex items-center gap-2 px-3 py-1.5 rounded-md ${rule.config.UserSyncedOnly ? 'bg-green-100' : 'bg-red-100'}`}>
                     <Switch
                         checked={rule.config.UserSyncedOnly}
@@ -1209,7 +1209,7 @@ const TargetingRule = ({
 
             {/* Deals Only toggle */}
             <div className="flex items-center gap-3 mt-3">
-                <Label className="text-xs font-medium text-slate-600">Deals only</Label>
+                <Label>Deals only</Label>
                 <div className={`flex items-center gap-2 px-3 py-1.5 rounded-md ${rule.config.DealsOnly ? 'bg-green-100' : 'bg-red-100'}`}>
                     <Switch
                         checked={!!rule.config.DealsOnly}
