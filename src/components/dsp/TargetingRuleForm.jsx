@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+import { toggleChipClassName } from "@/lib/toggleChip";
 import { Switch } from "@/components/ui/switch";
 import { Plus, X, Globe, AppWindow, Monitor, Smartphone, Tablet, LayoutTemplate, FileCode, Info, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -455,19 +455,15 @@ const dbg = {
                                 {ALL_DEVICES.map(device => {
                                     const isActive = formData.devices.includes(device);
                                     return (
-                                        <Badge
+                                        <button
                                             key={device}
-                                            variant="outline"
+                                            type="button"
                                             onClick={() => handleDeviceToggle(device)}
-                                            className={`transition-all cursor-pointer flex items-center ${
-                                                isActive
-                                                    ? 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200'
-                                                    : 'bg-red-100 text-red-800 border-red-300 hover:bg-red-200'
-                                            }`}
+                                            className={toggleChipClassName(isActive, "flex items-center")}
                                         >
                                             {deviceIcons[device]}
                                             {device}
-                                        </Badge>
+                                        </button>
                                     );
                                 })}
                             </div>

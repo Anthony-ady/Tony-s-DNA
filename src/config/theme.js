@@ -44,4 +44,12 @@ export const TAILWIND_CLASSES = {
   /** Outline cancel aligned with edit chrome */
   editCancelButton:
     'w-full border-slate-200 hover:bg-[rgb(244,246,255)] hover:border-[rgb(75,99,226)]/30 hover:text-[rgb(75,99,226)]',
+  /**
+   * Multi-select toggle chip (Edit Deal Device/Browser style): blue selected, white + border unselected.
+   * Use with `toggleChipClassName()` in `@/lib/toggleChip`.
+   */
+  toggleChip:
+    'inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(75,99,226)]/35 focus-visible:ring-offset-2',
+  toggleChipActive: 'bg-[rgb(75,99,226)] text-white border-transparent shadow-sm',
+  toggleChipInactive: 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50',
 };

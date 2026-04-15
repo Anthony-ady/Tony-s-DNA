@@ -19,6 +19,7 @@ import { apiUrl } from "@/config/api";
 import EntityEditorLayout from "@/components/layouts/EntityEditorLayout";
 import { useEntityFetch } from "@/hooks/useEntityFetch";
 import { apiPut } from "@/services/apiClient";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { TAILWIND_CLASSES } from "@/config/theme";
 
@@ -67,7 +68,6 @@ export default function EditUser() {
   const [userData, setUserData] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState("");
   const [isPowerUser, setIsPowerUser] = useState(false);
   const [selectedSection, setSelectedSection] = useState("basic");
 
@@ -114,7 +114,7 @@ export default function EditUser() {
     if (userData?.Uid) {
       try {
         await navigator.clipboard.writeText(userData.Uid);
-        setSuccess("User UID copied to clipboard!");
+        toast.success("Copied", { description: "User UID copied to clipboard." });
       } catch (err) {
         console.error("Failed to copy:", err);
       }
@@ -126,7 +126,6 @@ export default function EditUser() {
     try {
       setSaving(true);
       setError(null);
-      setSuccess("");
       const token = authService.getToken();
       if (!token) {
         authService.handleUnauthorized(navigate);
@@ -167,10 +166,12 @@ export default function EditUser() {
         const errBody = await response.json().catch(() => ({}));
         throw new Error(errBody.Message || errBody.error || `HTTP ${response.status}`);
       }
-      setSuccess("User updated successfully.");
+      toast.success("User saved", {
+        description: "Your changes were applied successfully.",
+      });
       refetch();
     } catch (err) {
-      setError(err.message);
+      toast.error("Save failed", { description: err.message });
     } finally {
       setSaving(false);
     }
@@ -334,11 +335,6 @@ export default function EditUser() {
           <Alert key="save" variant="destructive" className="border-red-200 bg-red-50">
             <AlertCircle className="h-5 w-5" />
             <AlertDescription className="text-red-800 font-medium">{error}</AlertDescription>
-          </Alert>
-        ),
-        success && (
-          <Alert key="success" className="border-green-200 bg-green-50">
-            <AlertDescription className="text-green-800 font-medium">{success}</AlertDescription>
           </Alert>
         ),
       ]}

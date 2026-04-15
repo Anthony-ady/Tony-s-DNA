@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { TAILWIND_CLASSES } from '@/config/theme';
 import { apiUrl } from '@/config/api';
 import EntityEditorLayout from '@/components/layouts/EntityEditorLayout';
+import { toast } from 'sonner';
 
 const EditRealm = () => {
   const [searchParams] = useSearchParams();
@@ -32,8 +33,6 @@ const EditRealm = () => {
   const [saving, setSaving] = useState(false);
   const [selectedSection, setSelectedSection] = useState('basic');
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState('');
-  const [isSuccessVisible, setIsSuccessVisible] = useState(false);
 
   // Truncate realm name to 15 characters with ellipsis
   const displayRealmName = realmData?.Name || realmName || 'Realm';
@@ -45,8 +44,7 @@ const EditRealm = () => {
     if (realmData?.Uid) {
       try {
         await navigator.clipboard.writeText(realmData.Uid);
-        setSuccess('Realm UID copied to clipboard!');
-        setIsSuccessVisible(true);
+        toast.success('Copied', { description: 'Realm UID copied to clipboard.' });
       } catch (err) {
         console.error('Failed to copy:', err);
       }
@@ -65,23 +63,6 @@ const EditRealm = () => {
       fetchRealmData();
     }
   }, [realmId]);
-
-  // Auto-hide success message after 3 seconds with fade transition
-  useEffect(() => {
-    if (success) {
-      setIsSuccessVisible(true);
-      const fadeOutTimer = setTimeout(() => {
-        setIsSuccessVisible(false);
-      }, 2400); // Start fade out 600ms before hiding
-      const hideTimer = setTimeout(() => {
-        setSuccess('');
-      }, 3000);
-      return () => {
-        clearTimeout(fadeOutTimer);
-        clearTimeout(hideTimer);
-      };
-    }
-  }, [success]);
 
   const fetchRealmData = async () => {
     try {
@@ -118,7 +99,6 @@ const EditRealm = () => {
     try {
       setSaving(true);
       setError(null);
-      setSuccess('');
       const token = authService.getToken();
       
       // Prepare the data for the API (remove null fields)
@@ -158,11 +138,12 @@ const EditRealm = () => {
       // Re-fetch the realm data to get the updated LockVersion
       await fetchRealmData();
 
-      // Show success message
-      setSuccess('Realm updated successfully!');
+      toast.success('Realm saved', {
+        description: 'Your changes were applied successfully.',
+      });
     } catch (err) {
       console.error('Error saving realm:', err);
-      setError(err.message);
+      toast.error('Save failed', { description: err.message });
     } finally {
       setSaving(false);
     }
@@ -351,13 +332,6 @@ const EditRealm = () => {
                 </AlertDescription>
               </Alert>
         ),
-        success && (
-              <Alert className={`border-green-200 bg-green-50 transition-opacity duration-700 ${isSuccessVisible ? 'opacity-100' : 'opacity-0'}`}>
-                <AlertDescription className="text-green-800 font-medium">
-                  {success}
-                </AlertDescription>
-              </Alert>
-        )
       ]}
     >
             {/* Basic Info Section */}

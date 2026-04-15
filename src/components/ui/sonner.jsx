@@ -1,29 +1,30 @@
-"use client";
-import { useTheme } from "next-themes"
-import { Toaster as Sonner } from "sonner"
+import { Toaster as Sonner } from "sonner";
 
-const Toaster = ({
-  ...props
-}) => {
-  const { theme = "system" } = useTheme()
-
+/**
+ * Global toast host (Sonner). Used for non-blocking feedback (e.g. save OK/KO).
+ * Positioned top-right; success/error styling via richColors.
+ */
+export function Toaster(props) {
   return (
-    (<Sonner
-      theme={theme}
-      className="toaster group"
+    <Sonner
+      theme="light"
+      position="top-right"
+      richColors
+      closeButton
+      offset={16}
       toastOptions={{
+        duration: 4500,
         classNames: {
           toast:
-            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
-          description: "group-[.toast]:text-muted-foreground",
-          actionButton:
-            "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
-          cancelButton:
-            "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
+            "group border shadow-md backdrop-blur-sm !right-4 !top-4 max-w-[min(100vw-2rem,22rem)]",
+          title: "font-semibold text-sm",
+          description: "text-xs opacity-90",
+          success: "!bg-emerald-50 !text-emerald-950 !border-emerald-200",
+          error: "!bg-red-50 !text-red-950 !border-red-200",
+          warning: "!bg-amber-50 !text-amber-950 !border-amber-200",
         },
       }}
-      {...props} />)
+      {...props}
+    />
   );
 }
-
-export { Toaster }

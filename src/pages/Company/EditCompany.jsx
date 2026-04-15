@@ -20,6 +20,7 @@ import { apiUrl } from '@/config/api';
 import EntityEditorLayout from '@/components/layouts/EntityEditorLayout';
 import { useEntityFetch } from '@/hooks/useEntityFetch';
 import { apiPut } from '@/services/apiClient';
+import { toast } from 'sonner';
 
 const EditCompany = () => {
   const [searchParams] = useSearchParams();
@@ -42,7 +43,6 @@ const EditCompany = () => {
   const [saving, setSaving] = useState(false);
   const [selectedSection, setSelectedSection] = useState('basic');
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState('');
 
   useEffect(() => {
     setCompanyData(fetchedData);
@@ -58,7 +58,7 @@ const EditCompany = () => {
     if (companyData?.Uid) {
       try {
         await navigator.clipboard.writeText(companyData.Uid);
-        setSuccess('Company UID copied to clipboard!');
+        toast.success('Copied', { description: 'Company UID copied to clipboard.' });
       } catch (err) {
         console.error('Failed to copy:', err);
       }
@@ -78,7 +78,6 @@ const EditCompany = () => {
     try {
       setSaving(true);
       setError(null);
-      setSuccess('');
       const token = authService.getToken();
       
       // Prepare the data for the API (remove null fields and clean manager objects)
@@ -112,11 +111,13 @@ const EditCompany = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      setSuccess('Company updated successfully!');
+      toast.success('Company saved', {
+        description: 'Your changes were applied successfully.',
+      });
       refetch();
     } catch (err) {
       console.error('Error saving company:', err);
-      setError(err.message);
+      toast.error('Save failed', { description: err.message });
     } finally {
       setSaving(false);
     }
@@ -317,13 +318,6 @@ const EditCompany = () => {
                 <AlertCircle className="h-5 w-5" />
                 <AlertDescription className="text-red-800 font-medium">
                   {displayError}
-                </AlertDescription>
-              </Alert>
-        ),
-        success && (
-              <Alert className="border-green-200 bg-green-50">
-                <AlertDescription className="text-green-800 font-medium">
-                  {success}
                 </AlertDescription>
               </Alert>
         )

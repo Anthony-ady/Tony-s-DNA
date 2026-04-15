@@ -20,8 +20,10 @@ import { cn } from '@/lib/utils';
 import { TAILWIND_CLASSES } from '@/config/theme';
 import { API_ENDPOINTS, apiUrl } from '@/config/api';
 import EntityEditorLayout from '@/components/layouts/EntityEditorLayout';
+import { toast } from 'sonner';
 import creativeScanPolicies from '../Realm/creative-scan-policies.json';
 import { IAB_TAXONOMY, getIABCodesForCategory } from '@/utils/iabTaxonomy';
+import { toggleChipClassName } from '@/lib/toggleChip';
 
 /** Remove IAB inclusion keys from SspConfig (allowed IAB is edited on Site, not on Placement). */
 function stripIabCategoriesFromSspConfig(ssp) {
@@ -76,8 +78,6 @@ const EditPlacement = () => {
   const [saving, setSaving] = useState(false);
   const [selectedSection, setSelectedSection] = useState('basic');
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState('');
-  const [isSuccessVisible, setIsSuccessVisible] = useState(false);
   const [brokers, setBrokers] = useState([]);
   const [brokerSearchOpen, setBrokerSearchOpen] = useState(false);
   const [brokerSearchTerm, setBrokerSearchTerm] = useState('');
@@ -102,8 +102,7 @@ const EditPlacement = () => {
     if (placementData?.Uid) {
       try {
         await navigator.clipboard.writeText(placementData.Uid);
-        setSuccess('Placement UID copied to clipboard!');
-        setIsSuccessVisible(true);
+        toast.success('Copied', { description: 'Placement UID copied to clipboard.' });
       } catch (err) {
         console.error('Failed to copy:', err);
       }
@@ -284,23 +283,6 @@ const EditPlacement = () => {
     }
   };
 
-  // Auto-hide success message after 3 seconds with fade transition
-  useEffect(() => {
-    if (success) {
-      setIsSuccessVisible(true);
-      const fadeOutTimer = setTimeout(() => {
-        setIsSuccessVisible(false);
-      }, 2400); // Start fade out 600ms before hiding
-      const hideTimer = setTimeout(() => {
-        setSuccess('');
-      }, 3000);
-      return () => {
-        clearTimeout(fadeOutTimer);
-        clearTimeout(hideTimer);
-      };
-    }
-  }, [success]);
-
   const fetchPlacementData = async () => {
     try {
       setLoading(true);
@@ -340,7 +322,6 @@ const EditPlacement = () => {
     try {
       setSaving(true);
       setError(null);
-      setSuccess('');
       const token = authService.getToken();
       
       // Prepare the data for the API (remove null fields and clean objects)
@@ -430,11 +411,12 @@ const EditPlacement = () => {
       // Re-fetch the placement data to get the updated LockVersion
       await fetchPlacementData();
 
-      // Show success message
-      setSuccess('Placement updated successfully!');
+      toast.success('Placement saved', {
+        description: 'Your changes were applied successfully.',
+      });
     } catch (err) {
       console.error('Error saving placement:', err);
-      setError(err.message);
+      toast.error('Save failed', { description: err.message });
     } finally {
       setSaving(false);
     }
@@ -458,15 +440,6 @@ const EditPlacement = () => {
     if (!timestamp) return 'N/A';
     const date = new Date(timestamp);
     return date.toLocaleString('fr-FR');
-  };
-
-  const getDeviceBadgeColor = (device) => {
-    switch (device) {
-      case 'DESKTOP': return 'bg-blue-100 text-blue-800';
-      case 'MOBILE': return 'bg-green-100 text-green-800';
-      case 'TABLET': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
   };
 
   const getIntegrationBadgeColor = (kind) => {
@@ -735,13 +708,6 @@ const EditPlacement = () => {
               </AlertDescription>
             </Alert>
         ),
-        success && (
-          <Alert className={`border-green-200 bg-green-50 transition-opacity duration-700 ${isSuccessVisible ? 'opacity-100' : 'opacity-0'}`}>
-              <AlertDescription className="text-green-800 font-medium">
-                {success}
-              </AlertDescription>
-            </Alert>
-        )
       ]}
     >
             {/* Basic Info Section */}
@@ -1745,9 +1711,10 @@ const EditPlacement = () => {
                       {['DESKTOP', 'MOBILE', 'TABLET'].map((device) => {
                         const isEnabled = placementData.EnabledDevices?.includes(device) || false;
                         return (
-                          <Badge 
-                            key={device} 
-                            className={`${isEnabled ? 'bg-green-100 text-green-800 border-green-300' : 'bg-red-100 text-red-800 border-red-300'} cursor-pointer hover:opacity-80 transition-opacity`}
+                          <button
+                            key={device}
+                            type="button"
+                            className={toggleChipClassName(isEnabled, 'flex items-center')}
                             onClick={() => {
                               const currentDevices = placementData.EnabledDevices || [];
                               let newDevices;
@@ -1768,7 +1735,7 @@ const EditPlacement = () => {
                             {getDeviceIcon(device)}
                             {device}
                           </div>
-                        </Badge>
+                        </button>
                         );
                       })}
                     </div>

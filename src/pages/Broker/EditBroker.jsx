@@ -21,6 +21,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { apiUrl } from "@/config/api";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -151,8 +152,6 @@ export default function EditBroker() {
   const [isSavingBroker, setIsSavingBroker] = useState(false);
   const brokerDataRef = useRef(null);
   /** Success banner (same pattern as Edit Deal / Edit Placement). */
-  const [success, setSuccess] = useState("");
-  const [isSuccessVisible, setIsSuccessVisible] = useState(false);
 
   const clearPendingChanges = useCallback(() => setHasPendingChanges(false), []);
 
@@ -302,19 +301,22 @@ export default function EditBroker() {
   const performBrokerSave = useCallback(async () => {
     const data = brokerDataRef.current;
     if (!data) {
-      setError("No data loaded to save. Please load the broker first.");
+      toast.warning("Nothing to save", {
+        description: "Load the broker first, then try again.",
+      });
       return;
     }
 
     const tokenToUse = authToken.trim() || getToken();
     if (!tokenToUse) {
-      setError("Please login first or provide an auth token");
+      toast.error("Cannot save", {
+        description: "Sign in or paste an auth token in the header.",
+      });
       return;
     }
 
     setIsSavingBroker(true);
     setError(null);
-    setSuccess("");
 
     try {
       const draft = cloneBrokerData(data);
@@ -354,30 +356,15 @@ export default function EditBroker() {
         data: nextData,
       }));
       clearPendingChanges();
-      setSuccess("Broker updated successfully!");
+      toast.success("Broker saved", {
+        description: "Your changes were applied successfully.",
+      });
     } catch (err) {
-      setError(`Error saving broker: ${err.message}`);
+      toast.error("Save failed", { description: err.message });
     } finally {
       setIsSavingBroker(false);
     }
   }, [authToken, brokerId, clearPendingChanges, getToken]);
-
-  // Auto-hide success message after 3s with fade (same as Edit Placement / Edit Deal)
-  useEffect(() => {
-    if (success) {
-      setIsSuccessVisible(true);
-      const fadeOutTimer = setTimeout(() => {
-        setIsSuccessVisible(false);
-      }, 2400);
-      const hideTimer = setTimeout(() => {
-        setSuccess("");
-      }, 3000);
-      return () => {
-        clearTimeout(fadeOutTimer);
-        clearTimeout(hideTimer);
-      };
-    }
-  }, [success]);
 
   // Auto-execute request when brokerId is set from URL
   useEffect(() => {
@@ -458,18 +445,8 @@ export default function EditBroker() {
         </Alert>
       );
     }
-    if (success) {
-      list.push(
-        <Alert
-          key="broker-save-success"
-          className={`border-green-200 bg-green-50 transition-opacity duration-700 ${isSuccessVisible ? "opacity-100" : "opacity-0"}`}
-        >
-          <AlertDescription className="text-green-800 font-medium">{success}</AlertDescription>
-        </Alert>
-      );
-    }
     return list;
-  }, [error, success, isSuccessVisible]);
+  }, [error]);
 
   if (!partnerIdFromUrl) {
     return (

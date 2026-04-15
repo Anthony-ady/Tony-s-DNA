@@ -31,6 +31,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Building2, Loader2, Save, X, AlertCircle, Users, ClipboardCopy, Globe2, Clock3, AppWindow, Monitor, Video, ImageIcon, Layers, Film, Target as TargetIcon, FileText, DollarSign, Smartphone, Sparkles, Search, Trash2, ChevronDown } from 'lucide-react';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { authService } from '../../services/authService';
+import { toast } from 'sonner';
+import { toggleChipClassName } from '@/lib/toggleChip';
 import { cn } from '@/lib/utils';
 import { TAILWIND_CLASSES } from '@/config/theme';
 import { API_ENDPOINTS, apiUrl } from '@/config/api';
@@ -271,8 +273,6 @@ const EditDeal = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [isSuccessVisible, setIsSuccessVisible] = useState(false);
   const [availableAudiences, setAvailableAudiences] = useState([]);
   const [audiencesLoading, setAudiencesLoading] = useState(false);
   const [audiencesError, setAudiencesError] = useState('');
@@ -705,18 +705,18 @@ const EditDeal = () => {
     if (!dealData) return;
 
     if (!isValidAdKindsCombo(adKindsAsArray(dealData))) {
-      setError(AD_KIND_MULTI_RULE_MSG);
+      toast.warning('Cannot save', { description: AD_KIND_MULTI_RULE_MSG });
       return;
     }
 
     setSaving(true);
     setError('');
-    setSuccess('');
 
     try {
       const token = authService.getToken();
       if (!token) {
-        throw new Error('Authentication token not found');
+        toast.error('Cannot save', { description: 'Authentication token not found.' });
+        return;
       }
 
       // Remove null fields before sending
@@ -737,13 +737,10 @@ const EditDeal = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      setSuccess('Deal updated successfully!');
-      setIsSuccessVisible(true);
-      setTimeout(() => {
-        setSuccess('');
-        setIsSuccessVisible(false);
-      }, 3000);
-      
+      toast.success('Deal saved', {
+        description: 'Your changes were applied successfully.',
+      });
+
       if (cleanedData.Name) {
         setDealName(cleanedData.Name);
       }
@@ -751,10 +748,9 @@ const EditDeal = () => {
       await fetchDealData(dealId);
     } catch (err) {
       console.error('Error saving deal:', err);
-      setError(err.message);
+      toast.error('Save failed', { description: err.message });
     } finally {
       setSaving(false);
-      setIsSuccessVisible(false);
     }
   };
 
@@ -1815,12 +1811,7 @@ const EditDeal = () => {
     if (!dealId) return;
     try {
       await navigator.clipboard.writeText(dealId);
-      setSuccess('Deal ID copied to clipboard.');
-      setIsSuccessVisible(true);
-      setTimeout(() => {
-        setSuccess('');
-        setIsSuccessVisible(false);
-      }, 2000);
+      toast.success('Copied', { description: 'Deal ID copied to clipboard.' });
     } catch (clipboardError) {
       console.error('Unable to copy Deal ID:', clipboardError);
     }
@@ -1928,13 +1919,6 @@ const EditDeal = () => {
   const truncatedDealName = displayDealName.length > 15 
     ? `${displayDealName.substring(0, 15)}...` 
     : displayDealName;
-
-  const renderToggleButton = (isActive) => cn(
-    'flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors',
-    isActive
-      ? 'bg-[rgb(75,99,226)] text-white border-transparent shadow-sm'
-      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-  );
 
   const sections = [
     { id: 'general', label: 'General info', icon: <Building2 className="w-4 h-4" /> },
@@ -2154,13 +2138,6 @@ const EditDeal = () => {
             </AlertDescription>
           </Alert>
         ),
-        success && (
-          <Alert className={`border-green-200 bg-green-50 transition-opacity duration-700 ${isSuccessVisible ? 'opacity-100' : 'opacity-0'}`}>
-            <AlertDescription className="text-green-800 font-medium">
-              {success}
-            </AlertDescription>
-          </Alert>
-        )
       ]}
     >
       <>
@@ -2438,7 +2415,7 @@ const EditDeal = () => {
                       <button
                         key={option.value}
                         type="button"
-                        className={renderToggleButton(dealData.ModeKind === option.value)}
+                        className={toggleChipClassName(dealData.ModeKind === option.value)}
                         onClick={() => updateDealData('ModeKind', option.value)}
                       >
                         {option.label}
@@ -2770,7 +2747,7 @@ const EditDeal = () => {
                         <button
                           key={option.value}
                           type="button"
-                          className={renderToggleButton(isAdFormatActive(option.value))}
+                          className={toggleChipClassName(isAdFormatActive(option.value))}
                           onClick={() => toggleAdFormat(option.value)}
                         >
                           {option.icon}
@@ -2826,14 +2803,14 @@ const EditDeal = () => {
                     <div className="flex flex-wrap gap-2 mb-2">
                       <button
                         type="button"
-                        className={renderToggleButton(minMarginIsNone)}
+                        className={toggleChipClassName(minMarginIsNone)}
                         onClick={() => updateDealData('MinMargin', '0')}
                       >
                         None
                       </button>
                       <button
                         type="button"
-                        className={renderToggleButton(!minMarginIsNone)}
+                        className={toggleChipClassName(!minMarginIsNone)}
                         onClick={() =>
                           updateDealData('MinMargin', minMarginIsNone ? '0.02' : dealData.MinMargin)
                         }
@@ -2869,7 +2846,7 @@ const EditDeal = () => {
                         <button
                           key={option.value}
                           type="button"
-                          className={renderToggleButton(dealData.AuctionType === option.value)}
+                          className={toggleChipClassName(dealData.AuctionType === option.value)}
                           onClick={() => updateDealData('AuctionType', option.value)}
                         >
                           {option.label}
@@ -2884,7 +2861,7 @@ const EditDeal = () => {
                         <button
                           key={option.value}
                           type="button"
-                          className={renderToggleButton(
+                          className={toggleChipClassName(
                             isPriorityOptionSelected(dealData.PriorityKind, option.value),
                           )}
                           onClick={() => updateDealData('PriorityKind', option.value)}
@@ -2917,7 +2894,7 @@ const EditDeal = () => {
                       <button
                         key={ch}
                         type="button"
-                        className={renderToggleButton(
+                        className={toggleChipClassName(
                           Array.isArray(dealData.DistributionChannelKinds) && dealData.DistributionChannelKinds.includes(ch)
                         )}
                         onClick={() => toggleDistributionChannel(ch)}
@@ -3037,7 +3014,7 @@ const EditDeal = () => {
                       <button
                         key={d}
                         type="button"
-                        className={renderToggleButton(
+                        className={toggleChipClassName(
                           Array.isArray(dealData.Targeting?.Devices) && dealData.Targeting.Devices.includes(d)
                         )}
                         onClick={() => toggleInTargetingArray('Devices', d)}
@@ -3054,7 +3031,7 @@ const EditDeal = () => {
                       <button
                         key={b}
                         type="button"
-                        className={renderToggleButton(
+                        className={toggleChipClassName(
                           Array.isArray(dealData.Targeting?.Browser) && dealData.Targeting.Browser.includes(b)
                         )}
                         onClick={() => toggleInTargetingArray('Browser', b)}
@@ -3071,7 +3048,7 @@ const EditDeal = () => {
                       <button
                         key={o}
                         type="button"
-                        className={renderToggleButton(
+                        className={toggleChipClassName(
                           Array.isArray(dealData.Targeting?.OS) && dealData.Targeting.OS.includes(o)
                         )}
                         onClick={() => toggleInTargetingArray('OS', o)}
@@ -3522,7 +3499,7 @@ const EditDeal = () => {
                       <button
                         key={o.value}
                         type="button"
-                        className={renderToggleButton(
+                        className={toggleChipClassName(
                           Array.isArray(dealData.Targeting?.OpenwebSources) && dealData.Targeting.OpenwebSources.includes(o.value),
                         )}
                         onClick={() => toggleInTargetingArray('OpenwebSources', o.value)}
@@ -3540,7 +3517,7 @@ const EditDeal = () => {
                       <button
                         key={`ex-${o.value}`}
                         type="button"
-                        className={renderToggleButton(
+                        className={toggleChipClassName(
                           Array.isArray(dealData.Targeting?.ExcludedOpenwebSources) &&
                             dealData.Targeting.ExcludedOpenwebSources.includes(o.value),
                         )}

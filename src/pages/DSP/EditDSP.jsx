@@ -46,6 +46,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { EditEntityPageLayout } from "@/components/layouts/EditEntityPageLayout";
+import { toast } from "sonner";
 
 import DspConfigDisplay from "../../components/dsp/DspConfigDisplay";
 import DspAdvancedSettingsSidebar from "../../components/dsp/DspAdvancedSettingsSidebar";
@@ -79,8 +80,6 @@ export default function EditDSP() {
   const [selectedSection, setSelectedSection] = useState('basic');
   const [hasPendingChanges, setHasPendingChanges] = useState(false);
   const [dspSaveInFlight, setDspSaveInFlight] = useState(false);
-  const [success, setSuccess] = useState("");
-  const [isSuccessVisible, setIsSuccessVisible] = useState(false);
   const saveHandlerRef = useRef(null);
   const responseRef = useRef(null);
   /** Preserve cookie_sync_ids from GET so we never send [] by mistake if state was overwritten */
@@ -1541,20 +1540,24 @@ export default function EditDSP() {
   // Persist the currently loaded DSP configuration as-is (used by the global Save button in the header)
   const performGlobalSave = async () => {
     if (!response?.data) {
-      setError("No DSP data loaded to save. Please execute a GET request first.");
+      toast.warning("Nothing to save", {
+        description: "Load the DSP first, then try again.",
+      });
       emitSaveStatus(false);
-        return;
+      return;
     }
 
-    const tokenToUse = validateTokenForUpdate();
+    const tokenToUse = getTokenToUse();
     if (!tokenToUse) {
+      toast.error("Cannot save", {
+        description: "Sign in or paste an auth token in the header.",
+      });
       emitSaveStatus(false);
       return;
     }
 
     setLoading(true);
     setError(null);
-    setSuccess("");
     emitSaveStatus(true);
 
     try {
@@ -1602,9 +1605,13 @@ export default function EditDSP() {
         data: updatedData ?? prev.data
       }));
       clearPendingChanges();
-      setSuccess("DSP updated successfully!");
+      toast.success("DSP saved", {
+        description: "Your changes were applied successfully.",
+      });
     } catch (err) {
-      setError(`Error saving DSP configuration: ${err.message}`);
+      toast.error("Save failed", {
+        description: err.message,
+      });
     } finally {
         setLoading(false);
       emitSaveStatus(false);
@@ -1629,23 +1636,6 @@ export default function EditDSP() {
       window.removeEventListener('dspGlobalSave', handleGlobalSaveRequest);
     };
   }, []);
-
-  // Auto-hide success message after 3s with fade (same as Edit Deal / Edit Placement)
-  useEffect(() => {
-    if (success) {
-      setIsSuccessVisible(true);
-      const fadeOutTimer = setTimeout(() => {
-        setIsSuccessVisible(false);
-      }, 2400);
-      const hideTimer = setTimeout(() => {
-        setSuccess("");
-      }, 3000);
-      return () => {
-        clearTimeout(fadeOutTimer);
-        clearTimeout(hideTimer);
-      };
-    }
-  }, [success]);
 
   // Get the DSP name from URL params or from response data
   const dspNameFromUrl = searchParams.get('name');
@@ -1678,18 +1668,8 @@ export default function EditDSP() {
         </Alert>
       );
     }
-    if (success) {
-      list.push(
-        <Alert
-          key="dsp-success"
-          className={`border-green-200 bg-green-50 transition-opacity duration-700 ${isSuccessVisible ? "opacity-100" : "opacity-0"}`}
-        >
-          <AlertDescription className="text-green-800 font-medium">{success}</AlertDescription>
-        </Alert>
-      );
-    }
     return list;
-  }, [error, success, isSuccessVisible]);
+  }, [error]);
 
   const SectionFallback = ({ title }) => (
     <Card className="border-slate-200 shadow-lg h-full">

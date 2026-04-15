@@ -16,8 +16,8 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Save, Loader2, Star, Zap, X, Server } from 'lucide-react';
-import { Separator } from "@/components/ui/separator";
+import { Save, Loader2, Zap, X, Server } from 'lucide-react';
+import { toggleChipClassName } from "@/lib/toggleChip";
 
 export default function BrokerDataCenterSettings({ dataCenters, onUpdate, isSaving }) {
     // Local state for managing data center configurations
@@ -146,22 +146,18 @@ export default function BrokerDataCenterSettings({ dataCenters, onUpdate, isSavi
                                         <Label className="text-sm font-medium text-slate-700">
                                             {dataCenterNames[dcName] || dcName}
                                         </Label>
-                                        {config.Default && (
-                                            <div className="flex items-center text-xs text-amber-600 font-semibold mt-1">
-                                                <Star className="w-3 h-3 mr-1 fill-amber-400 text-amber-500"/>
-                                                Default
-                                            </div>
-                                        )}
                                     </div>
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
+                                    <button
+                                        type="button"
                                         onClick={() => handleSetDefault(dcName)}
                                         disabled={config.Default || isSaving}
-                                        className="text-xs"
+                                        className={toggleChipClassName(
+                                            Boolean(config.Default),
+                                            `text-xs shrink-0 ${config.Default || isSaving ? "cursor-not-allowed" : ""}`
+                                        )}
                                     >
-                                        Set Default
-                                    </Button>
+                                        Default
+                                    </button>
                                 </div>
 
                                 {/* Enabled/Disabled Control */}

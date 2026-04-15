@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -122,8 +123,6 @@ export function UserSyncPanel({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState("");
-  const [isSuccessVisible, setIsSuccessVisible] = useState(false);
   const [hasPending, setHasPending] = useState(false);
   const [riseCodeSyncOpen, setRiseCodeSyncOpen] = useState(false);
 
@@ -153,23 +152,6 @@ export function UserSyncPanel({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uid]);
 
-  // Auto-hide success message after 3s with fade (same as Edit Deal / Edit Placement)
-  useEffect(() => {
-    if (success) {
-      setIsSuccessVisible(true);
-      const fadeOutTimer = setTimeout(() => {
-        setIsSuccessVisible(false);
-      }, 2400);
-      const hideTimer = setTimeout(() => {
-        setSuccess("");
-      }, 3000);
-      return () => {
-        clearTimeout(fadeOutTimer);
-        clearTimeout(hideTimer);
-      };
-    }
-  }, [success]);
-
   const applyChange = (updater) => {
     setData(prev => { const next = structuredClone(prev); updater(next); return next; });
     setHasPending(true);
@@ -179,7 +161,7 @@ export function UserSyncPanel({
     if (!data) return;
     const token = getToken();
     if (!token) { setError('No authentication token'); return; }
-    setSaving(true); setError(null); setSuccess("");
+    setSaving(true); setError(null);
     try {
       const cleanEndpoint = (ep) => {
         const e = { ...ep };
@@ -211,8 +193,12 @@ export function UserSyncPanel({
       const json = await res.json();
       setData(json?.Data ?? json);
       setHasPending(false);
-      setSuccess("User sync updated successfully!");
-    } catch (e) { setError(e.message); }
+      toast.success("User sync saved", {
+        description: "Your changes were applied successfully.",
+      });
+    } catch (e) {
+      toast.error("Save failed", { description: e.message });
+    }
     finally { setSaving(false); }
   }, [data, getToken, uid]);
 
@@ -470,13 +456,6 @@ export function UserSyncPanel({
         <Alert variant="destructive" className="border-red-200 bg-red-50 py-2">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription className="text-red-800 text-xs">{error}</AlertDescription>
-        </Alert>
-      )}
-      {success && (
-        <Alert
-          className={`border-green-200 bg-green-50 transition-opacity duration-700 ${isSuccessVisible ? "opacity-100" : "opacity-0"}`}
-        >
-          <AlertDescription className="text-green-800 font-medium">{success}</AlertDescription>
         </Alert>
       )}
 

@@ -14,6 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import CollapsibleBadgeList from '@/components/shared/CollapsibleBadgeList';
 import TargetingRuleForm from './TargetingRuleForm';
+import { toggleChipClassName } from '@/lib/toggleChip';
 
 const endpointMapping = {
     EUR: "EMEA",
@@ -811,18 +812,16 @@ const TargetingRule = ({
                             {ALL_DEVICES.map(device => {
                                 const isActive = rule.config.Devices?.includes(device);
                                 return (
-                                    <Badge
+                                    <button
                                         key={device}
+                                        type="button"
                                         onClick={() => onUpdateTargetingDevices(rule.uid, [...(rule.config.Devices || []).filter(d => d !== device), ...(isActive ? [] : [device])])}
-                                        className={`font-semibold px-3 py-1 text-xs cursor-pointer transition-all hover:opacity-80 ${
-                                            isActive
-                                                ? 'bg-green-100 text-green-800 border border-green-200 hover:bg-green-200'
-                                                : 'bg-red-100 text-red-800 border border-red-200 hover:bg-red-200'
-                                        } ${isParentSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        disabled={isParentSaving}
+                                        className={toggleChipClassName(isActive, `text-xs font-semibold ${isParentSaving ? 'opacity-50 cursor-not-allowed' : ''}`)}
                                     >
                                         {deviceIcons[device] || null}
                                         {device}
-                                    </Badge>
+                                    </button>
                                 )
                             })}
                         </div>

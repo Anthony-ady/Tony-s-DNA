@@ -35,23 +35,10 @@ import ToggleSwitch from '@/components/ui/toggle-switch';
 import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import CollapsibleBadgeList from '@/components/shared/CollapsibleBadgeList';
+import { toggleChipClassName } from '@/lib/toggleChip';
 
 
 // ===== UTILITY FUNCTIONS AND CONSTANTS =====
-
-/**
- * Returns the appropriate CSS classes for inventory directness badges
- * Provides visual distinction between DIRECT and RESELLER inventory types
- * @param {string} directness - The inventory directness value ('DIRECT' or 'RESELLER')
- * @returns {string} CSS classes for styling the badge
- */
-const getDirectnessColor = (directness) => {
-    switch (directness) {
-        case 'DIRECT': return 'bg-blue-50 text-blue-800 border-blue-300 hover:bg-blue-100';
-        case 'RESELLER': return 'bg-purple-50 text-purple-800 border-purple-300 hover:bg-purple-100';
-        default: return 'bg-slate-50 text-slate-800 border-slate-300 hover:bg-slate-100';
-    }
-};
 
 /**
  * Mapping of ad kinds to their corresponding API keys and values
@@ -348,12 +335,11 @@ export default function BrokerConfigDisplay({ data, onUpdateName, onUpdateSeller
         setIsEditingTagId(false);
     };
 
-    const handleToggleInventoryDirectness = async () => {
+    const handleSetInventoryDirectness = async (newDirectness) => {
         if (!onUpdateInventoryDirectness) return;
+        if (newDirectness === inventory_directness) return;
 
         setIsSavingInventoryDirectness(true);
-        const newDirectness = inventory_directness === 'DIRECT' ? 'RESELLER' : 'DIRECT';
-
         try {
             await onUpdateInventoryDirectness(newDirectness);
         } catch (error) {
@@ -656,26 +642,31 @@ export default function BrokerConfigDisplay({ data, onUpdateName, onUpdateSeller
                             </div>
                         )}
                         {inventory_directness && (
-                            <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200">
-                                <div className="flex items-center gap-3">
-                                    <span className="font-semibold text-slate-700 text-xs">Inventory</span>
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between p-3 bg-white rounded-lg border border-slate-200">
+                                <span className="font-semibold text-slate-700 text-xs uppercase tracking-wide">Inventory</span>
+                                <div className="flex flex-wrap gap-2">
+                                    {['DIRECT', 'RESELLER'].map((mode) => (
+                                        <button
+                                            key={mode}
+                                            type="button"
+                                            onClick={() => handleSetInventoryDirectness(mode)}
+                                            disabled={isSavingInventoryDirectness}
+                                            className={toggleChipClassName(
+                                                inventory_directness === mode,
+                                                `text-xs ${isSavingInventoryDirectness ? 'opacity-50 cursor-not-allowed' : ''}`
+                                            )}
+                                        >
+                                            {isSavingInventoryDirectness ? (
+                                                <span className="inline-flex items-center gap-1.5">
+                                                    <Loader2 className="w-3 h-3 animate-spin shrink-0" />
+                                                    {mode}
+                                                </span>
+                                            ) : (
+                                                mode
+                                            )}
+                                        </button>
+                                    ))}
                                 </div>
-                                <button
-                                    onClick={handleToggleInventoryDirectness}
-                                    disabled={isSavingInventoryDirectness}
-                                    className="mt-2 sm:mt-0"
-                                >
-                                    <Badge className={`cursor-pointer hover:opacity-80 transition-opacity ${isSavingInventoryDirectness ? 'opacity-50 cursor-not-allowed' : ''} ${inventory_directness === 'DIRECT' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-indigo-50 text-indigo-800 border-indigo-200'}`}>
-                                        {isSavingInventoryDirectness ? (
-                                            <div className="flex items-center gap-2">
-                                                <Loader2 className="w-3 h-3 animate-spin" />
-                                                {inventory_directness}
-                                            </div>
-                                        ) : (
-                                            inventory_directness
-                                        )}
-                                    </Badge>
-                                </button>
                             </div>
                         )}
                     </div>
@@ -739,19 +730,18 @@ export default function BrokerConfigDisplay({ data, onUpdateName, onUpdateSeller
                                 {ALL_DEVICES.map(device => {
                                     const isActive = (targeting.Devices || []).includes(device);
                                     return (
-                                        <Badge 
-                                            key={device} 
-                                            variant="outline"
+                                        <button
+                                            key={device}
+                                            type="button"
                                             onClick={() => handleToggleDevice(device)}
                                             disabled={isSavingTargeting}
-                                            className={`cursor-pointer transition-all rounded-full px-3 ${
-                                                isActive 
-                                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100' 
-                                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                                            } ${isSavingTargeting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                            className={toggleChipClassName(
+                                              isActive,
+                                              isSavingTargeting ? 'opacity-50 cursor-not-allowed' : ''
+                                            )}
                                         >
                                             {device}
-                                        </Badge>
+                                        </button>
                                     )
                                 })}
                             </div>

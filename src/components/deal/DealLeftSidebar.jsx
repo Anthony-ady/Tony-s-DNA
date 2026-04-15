@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { toggleChipClassName } from '@/lib/toggleChip';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -157,18 +157,18 @@ export default function DealLeftSidebar({ data, onUpdateAdKinds, onUpdateBoolean
                                     {DISTRIBUTION_CHANNELS.map((channel) => {
                                         const isActive = Data.DistributionChannelKinds.includes(channel);
                                         return (
-                                            <Badge
+                                            <button
                                                 key={channel}
-                                                variant="outline"
+                                                type="button"
                                                 onClick={() => handleToggleDistributionChannel(channel)}
-                                                className={`transition-all cursor-pointer ${
-                                                    isActive
-                                                        ? 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200'
-                                                        : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
-                                                } ${isSavingDistribution ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                disabled={isSavingDistribution}
+                                                className={toggleChipClassName(
+                                                  isActive,
+                                                  isSavingDistribution ? 'opacity-50 cursor-not-allowed' : ''
+                                                )}
                                             >
                                                 {channel}
-                                            </Badge>
+                                            </button>
                                         );
                                     })}
                                 </div>
@@ -193,18 +193,18 @@ export default function DealLeftSidebar({ data, onUpdateAdKinds, onUpdateBoolean
                                     {AD_KINDS.map((adKind) => {
                                         const isActive = Data.AdKinds.includes(adKind);
                                         return (
-                                            <Badge
+                                            <button
                                                 key={adKind}
-                                                variant="outline"
+                                                type="button"
                                                 onClick={() => handleToggleAdKind(adKind)}
-                                                className={`transition-all cursor-pointer ${
-                                                    isActive
-                                                        ? 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200'
-                                                        : 'bg-red-100 text-red-800 border-red-300 hover:bg-red-200'
-                                                } ${isSavingAdKinds ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                disabled={isSavingAdKinds}
+                                                className={toggleChipClassName(
+                                                  isActive,
+                                                  isSavingAdKinds ? 'opacity-50 cursor-not-allowed' : ''
+                                                )}
                                             >
                                                 {AD_KIND_LABELS[adKind] || adKind}
-                                            </Badge>
+                                            </button>
                                         );
                                     })}
                                 </div>

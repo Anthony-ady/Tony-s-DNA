@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { TAILWIND_CLASSES } from '@/config/theme';
 import { apiUrl, API_ENDPOINTS } from '@/config/api';
 import EntityEditorLayout from '@/components/layouts/EntityEditorLayout';
+import { toast } from 'sonner';
 import { IAB_TAXONOMY, getIABCodesForCategory } from '@/utils/iabTaxonomy';
 
 const EditSite = () => {
@@ -44,7 +45,6 @@ const EditSite = () => {
   const [partnerSearchResults, setPartnerSearchResults] = useState([]);
   const [partnerSearchOpen, setPartnerSearchOpen] = useState(false);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState('');
 
   // Frozen initial IAB selection (for sort order): only updated on fetch, not on user toggle
   const initialIabListRef = useRef(null);
@@ -73,7 +73,7 @@ const EditSite = () => {
     if (siteData?.Uid) {
       try {
         await navigator.clipboard.writeText(siteData.Uid);
-        setSuccess('Site UID copied to clipboard!');
+        toast.success('Copied', { description: 'Site UID copied to clipboard.' });
       } catch (err) {
         console.error('Failed to copy:', err);
       }
@@ -204,7 +204,6 @@ const EditSite = () => {
     try {
       setSaving(true);
       setError(null);
-      setSuccess('');
       const token = authService.getToken();
       
       // Prepare the data for the API (remove null fields and clean objects)
@@ -254,10 +253,12 @@ const EditSite = () => {
       // Re-fetch site data to get the updated LockVersion for the next save
       await fetchSiteData();
 
-      setSuccess('Site updated successfully!');
+      toast.success('Site saved', {
+        description: 'Your changes were applied successfully.',
+      });
     } catch (err) {
       console.error('Error saving site:', err);
-      setError(err.message);
+      toast.error('Save failed', { description: err.message });
     } finally {
       setSaving(false);
     }
@@ -550,13 +551,6 @@ const EditSite = () => {
               </AlertDescription>
             </Alert>
         ),
-        success && (
-            <Alert className="border-green-200 bg-green-50">
-              <AlertDescription className="text-green-800 font-medium">
-                {success}
-              </AlertDescription>
-            </Alert>
-        )
       ]}
     >
             {/* Basic Info Section */}
