@@ -1,5 +1,6 @@
 import React from "react";
 import { DollarSign, TrendingUp, BarChart3, ExternalLink } from "lucide-react";
+import { enqueueSparklineFetch } from "@/utils/sparklineFetchQueue";
 import {
   LineChart,
   Line,
@@ -15,6 +16,8 @@ import {
  * - Shows name + margin %
  * - Shows Revenue / Publisher Costs / Margin on one line
  * - Shows a small daily Revenue & Costs trend curve
+ * Spark data loads when the card enters the viewport (IntersectionObserver) and
+ * fetches are queued globally (max 3 concurrent) to limit backend load.
  */
 
 export function EntityPerformanceCard({
@@ -39,17 +42,50 @@ export function EntityPerformanceCard({
   const isPositive = margin >= 0;
   const [sparkData, setSparkData] = React.useState([]);
   const [loadingSpark, setLoadingSpark] = React.useState(false);
+  const [sparkInView, setSparkInView] = React.useState(false);
+  const cardRootRef = React.useRef(null);
   const requestIdRef = React.useRef(0);
   const loadingSpinnerDataUri = `data:image/svg+xml;utf8,${encodeURIComponent(
     '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 50 50"><circle cx="25" cy="25" r="20" fill="none" stroke="#94a3b8" stroke-width="5" stroke-linecap="round" stroke-dasharray="31.4 31.4"><animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="1s" repeatCount="indefinite"/></circle></svg>'
   )}`;
 
+  const sparkCacheKey = React.useMemo(
+    () => `${entityId}_${startDate}_${endDate}_${viewMode}`,
+    [entityId, startDate, endDate, viewMode]
+  );
+
+  const hasSparkCacheEntry =
+    cache != null && Object.prototype.hasOwnProperty.call(cache, sparkCacheKey);
+
+  React.useLayoutEffect(() => {
+    const el = cardRootRef.current;
+    if (!el) return undefined;
+    if (typeof IntersectionObserver === "undefined") {
+      setSparkInView(true);
+      return undefined;
+    }
+    let cancelled = false;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (cancelled) return;
+        if (entries.some((e) => e.isIntersecting)) {
+          setSparkInView(true);
+        }
+      },
+      { root: null, rootMargin: "120px 0px 280px 0px", threshold: 0.01 }
+    );
+    io.observe(el);
+    return () => {
+      cancelled = true;
+      io.disconnect();
+    };
+  }, [entityId, startDate, endDate, viewMode]);
+
   React.useEffect(() => {
     let cancelled = false;
-    const cacheKey = `${entityId}_${startDate}_${endDate}_${viewMode}`;
+    const cacheKey = sparkCacheKey;
     const requestId = ++requestIdRef.current;
 
-    setLoadingSpark(true);
     const cached = cache?.[cacheKey];
     if (cached && Array.isArray(cached)) {
       setSparkData(cached);
@@ -59,9 +95,19 @@ export function EntityPerformanceCard({
       };
     }
 
+    if (!sparkInView) {
+      setLoadingSpark(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setLoadingSpark(true);
     const load = async () => {
       try {
-        const daily = await fetchDailyData(entityId, entityName, startDate, endDate);
+        const daily = await enqueueSparklineFetch(() =>
+          fetchDailyData(entityId, entityName, startDate, endDate)
+        );
         if (cancelled || requestId !== requestIdRef.current) return;
         const chart = (daily || []).map((d) => ({
           dateLabel: d.day,
@@ -99,7 +145,18 @@ export function EntityPerformanceCard({
     return () => {
       cancelled = true;
     };
-  }, [entityId, entityName, startDate, endDate, cache, setCache, fetchDailyData, viewMode]);
+  }, [
+    entityId,
+    entityName,
+    startDate,
+    endDate,
+    cache,
+    setCache,
+    fetchDailyData,
+    viewMode,
+    sparkInView,
+    sparkCacheKey,
+  ]);
 
   const handleClick = () => {
     if (!entityId || !entityName || !onClick) return;
@@ -204,6 +261,7 @@ export function EntityPerformanceCard({
 
   return (
     <div
+      ref={cardRootRef}
       className="relative flex flex-col justify-between rounded-xl border border-slate-200 bg-white text-slate-900 p-5 shadow-sm cursor-pointer hover:border-[rgb(30,47,130)] hover:shadow-md transition"
       style={{ position: "relative", zIndex: isHovered ? 100 : 1 }}
       onMouseEnter={() => setIsHovered(true)}
@@ -339,6 +397,10 @@ export function EntityPerformanceCard({
           <div className="h-full flex items-center justify-center text-[9px] text-slate-400">
             {loadingSpark ? (
               <img src={loadingSpinnerDataUri} alt="Loading" className="w-4 h-4" />
+            ) : !hasSparkCacheEntry && !sparkInView ? (
+              <span className="text-slate-300" title="Chart loads when the card is visible">
+                ⋯
+              </span>
             ) : (
               "No data"
             )}
