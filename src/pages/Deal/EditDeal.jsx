@@ -1952,6 +1952,7 @@ const EditDeal = () => {
   const adFormatOptions = useMemo(() => ([
     { value: 'AD_BANNER', label: 'Banner', icon: <ImageIcon className="w-4 h-4" /> },
     { value: 'AD_STORY', label: 'Story', icon: <Monitor className="w-4 h-4" /> },
+    { value: 'AD_TRAFFIC', label: 'Native display', icon: <Smartphone className="w-4 h-4" /> },
     { value: 'AD_VIDEO', label: 'Native Video', icon: <Video className="w-4 h-4" /> },
     { value: 'AD_INSTREAM', label: 'Instream', icon: <AppWindow className="w-4 h-4" /> },
     { value: 'AD_RAW_VIDEO', label: 'Video in banner', icon: <Film className="w-4 h-4" /> },
@@ -2805,7 +2806,7 @@ const EditDeal = () => {
                       step="0.01"
                       min="0"
                       className="max-w-xs"
-                      value={dealData.Floor != null ? Number((dealData.Floor / 100).toFixed(2)) : ''}
+                      value={dealData.Floor != null ? Number((dealData.Floor / 1000).toFixed(2)) : ''}
                       onChange={(e) => {
                         const raw = e.target.value;
                         if (raw === '') {
@@ -2814,7 +2815,7 @@ const EditDeal = () => {
                         }
                         const usd = parseFloat(raw);
                         if (Number.isNaN(usd)) return;
-                        updateDealData('Floor', Math.max(0, Math.round(usd * 100)));
+                        updateDealData('Floor', Math.max(0, Math.round(usd * 1000)));
                       }}
                       placeholder="e.g. 1.30"
                     />
