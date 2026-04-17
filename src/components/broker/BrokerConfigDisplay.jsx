@@ -5,7 +5,7 @@
  * This component displays and manages broker configuration settings in a comprehensive interface.
  * It provides functionality for:
  * - Viewing and editing broker basic information (name, URL, seller ID, etc.)
- * - Managing inventory directness settings (DIRECT/RESELLER)
+ * - Managing inventory directness settings (DIRECT/RESELLER/BOTH)
  * - Configuring connector protocols and ad transformation settings
  * - Setting up targeting rules (devices, countries, site domains)
  * - Managing ad kinds and billing configurations
@@ -646,7 +646,7 @@ export default function BrokerConfigDisplay({ data, onUpdateName, onUpdateSeller
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between p-3 bg-white rounded-lg border border-slate-200">
                                 <span className={TAILWIND_CLASSES.formSectionLabel}>Inventory</span>
                                 <div className="flex flex-wrap gap-2">
-                                    {['DIRECT', 'RESELLER'].map((mode) => (
+                                    {['DIRECT', 'RESELLER', 'BOTH'].map((mode) => (
                                         <button
                                             key={mode}
                                             type="button"
