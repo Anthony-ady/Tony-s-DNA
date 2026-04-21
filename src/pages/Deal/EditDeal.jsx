@@ -184,6 +184,12 @@ function minMarginSliderPercentToStored(percent) {
   return String(p / 100);
 }
 
+/** API expects LIGHTBOX for pop-in; legacy UI used POPIN, which the backend does not apply. */
+function normalizeContentOpeners(openers) {
+  if (!Array.isArray(openers)) return [];
+  return [...new Set(openers.map((x) => (x === 'POPIN' ? 'LIGHTBOX' : x)))];
+}
+
 function extractPartnerNameFromPayload(json) {
   const p = json?.Data ?? json;
   if (!p || typeof p !== 'object') return undefined;
@@ -693,10 +699,14 @@ const EditDeal = () => {
         setDealData(null);
       } else {
         const audienceList = Array.isArray(loaded.Audiences) ? loaded.Audiences : [];
-        setDealData({
-          ...loaded,
-          Curated: audienceList.length > 0,
-        });
+        const next = { ...loaded, Curated: audienceList.length > 0 };
+        if (next.Content && Array.isArray(next.Content.Openers)) {
+          next.Content = {
+            ...next.Content,
+            Openers: normalizeContentOpeners(next.Content.Openers),
+          };
+        }
+        setDealData(next);
       }
       setDealName(prev => prev || data.Data?.Name || 'Deal');
     } catch (err) {
@@ -725,8 +735,17 @@ const EditDeal = () => {
         return;
       }
 
-      // Remove null fields before sending
-      const cleanedData = removeNullFields(dealData);
+      const draft =
+        dealData.Content && Array.isArray(dealData.Content.Openers)
+          ? {
+              ...dealData,
+              Content: {
+                ...dealData.Content,
+                Openers: normalizeContentOpeners(dealData.Content.Openers),
+              },
+            }
+          : dealData;
+      const cleanedData = removeNullFields(draft);
 
       const response = await fetch(apiUrl.deal(dealId), {
         method: 'PUT',
@@ -1889,12 +1908,15 @@ const EditDeal = () => {
     });
   };
 
-  const isOpenerActive = (value) => Array.isArray(dealData?.Content?.Openers) && dealData.Content.Openers.includes(value);
+  const isOpenerActive = (value) =>
+    normalizeContentOpeners(dealData?.Content?.Openers).includes(value);
 
   const toggleOpener = (value) => {
-    const current = Array.isArray(dealData?.Content?.Openers) ? dealData.Content.Openers : [];
+    const current = normalizeContentOpeners(
+      Array.isArray(dealData?.Content?.Openers) ? dealData.Content.Openers : []
+    );
     const isActive = current.includes(value);
-    const updated = isActive ? current.filter(item => item !== value) : [...current, value];
+    const updated = isActive ? current.filter((item) => item !== value) : [...current, value];
     updateNestedData('Content', 'Openers', updated);
   };
 
@@ -1961,7 +1983,7 @@ const EditDeal = () => {
 
   const openerOptions = [
     { value: 'REDIRECT', label: 'REDIRECT' },
-    { value: 'POPIN', label: 'POPIN' },
+    { value: 'LIGHTBOX', label: 'Pop-in' },
     { value: 'INVIEW', label: 'INVIEW' },
   ];
 
