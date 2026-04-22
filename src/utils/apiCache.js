@@ -424,13 +424,22 @@ const inFlightRequests = new Map();
 
 // Wrapper for fetch that uses cache
 export const cachedFetch = async (url, options = {}) => {
-  const method = options.method || 'GET';
-  const body = options.body ? (typeof options.body === 'string' ? JSON.parse(options.body) : options.body) : null;
+  const { skipClientCache: optSkipClientCache, ...fetchOptions } = options;
+  const method = fetchOptions.method || 'GET';
+  const body = fetchOptions.body
+    ? typeof fetchOptions.body === 'string'
+      ? JSON.parse(fetchOptions.body)
+      : fetchOptions.body
+    : null;
   const cacheKey = generateCacheKey(url, method, body);
-  const skipClientCache = isDruidHourlyRequestBody(body);
+  const skipClientCache = Boolean(optSkipClientCache) || isDruidHourlyRequestBody(body);
 
   if (skipClientCache) {
-    console.log('⏱️ Real-time (PT1H): bypassing localStorage API cache for:', url);
+    const reason = optSkipClientCache ? 'explicit' : 'PT1H';
+    console.log(
+      `⏱️ Real-time (${reason}): bypassing localStorage API cache for:`,
+      url
+    );
   }
 
   // Try to get from cache first (exact match) — never for hourly granularity
@@ -450,7 +459,7 @@ export const cachedFetch = async (url, options = {}) => {
     
     // Smart cache for hourly data: use cache for old data, fetch fresh for recent
     if (method === 'POST' && body) {
-      const smartCacheResult = await smartHourlyCache(url, options, body);
+      const smartCacheResult = await smartHourlyCache(url, fetchOptions, body);
       if (smartCacheResult) {
         return smartCacheResult;
       }
@@ -498,7 +507,7 @@ export const cachedFetch = async (url, options = {}) => {
 
   let response;
   try {
-    response = await fetch(url, options);
+    response = await fetch(url, fetchOptions);
   } catch (error) {
     resolveInflight({ ok: false, status: 0, data: null });
     inFlightRequests.delete(cacheKey);

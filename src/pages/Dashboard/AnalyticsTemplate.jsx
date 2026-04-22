@@ -33,6 +33,34 @@ import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger }
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
+/**
+ * Right-panel adserver_stats queries: in real-time (hourly) mode use the current UTC day
+ * for Begin/End. Otherwise the UI still holds the last daily range and looks non–real-time
+ * and cachedFetch may return a stale "Granularity: all" response.
+ */
+function getDruidAdserverPanelIntervalForView(viewMode, startDate, endDate) {
+  if (viewMode === 'hourly') {
+    const now = new Date();
+    const y = now.getUTCFullYear();
+    const m = now.getUTCMonth();
+    const d = now.getUTCDate();
+    return {
+      startDateValue: new Date(Date.UTC(y, m, d, 0, 0, 0, 0)),
+      endDateValue: new Date(Date.UTC(y, m, d, 23, 59, 59, 999)),
+    };
+  }
+  if (startDate && endDate) {
+    return {
+      startDateValue: new Date(startDate + 'T00:00:00.000Z'),
+      endDateValue: new Date(endDate + 'T23:59:59.999Z'),
+    };
+  }
+  return {
+    startDateValue: new Date(0),
+    endDateValue: new Date(0),
+  };
+}
+
 export default function AnalyticsTemplate({
   // Entity configuration
   entityIdParam = 'id',
@@ -1419,8 +1447,11 @@ export default function AnalyticsTemplate({
         throw new Error("No authentication token found");
       }
 
-      const startDateValue = new Date(startDate + 'T00:00:00.000Z');
-      const endDateValue = new Date(endDate + 'T23:59:59.000Z');
+      const { startDateValue, endDateValue } = getDruidAdserverPanelIntervalForView(
+        viewMode,
+        startDate,
+        endDate
+      );
 
       const apiFilters = buildFiltersForRequest(filters);
       console.log('🔵 fetchDeviceData - filters received:', filters);
@@ -1445,7 +1476,8 @@ export default function AnalyticsTemplate({
           "Content-Type": "application/json",
           "x-ayl-auth-token": token
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        skipClientCache: viewMode === 'hourly',
       });
 
       if (!response.ok) {
@@ -1500,8 +1532,11 @@ export default function AnalyticsTemplate({
         throw new Error("No authentication token found");
       }
 
-      const startDateValue = new Date(startDate + 'T00:00:00.000Z');
-      const endDateValue = new Date(endDate + 'T23:59:59.999Z');
+      const { startDateValue, endDateValue } = getDruidAdserverPanelIntervalForView(
+        viewMode,
+        startDate,
+        endDate
+      );
 
       const apiFilters = buildFiltersForRequest(filters);
       const payload = {
@@ -1615,8 +1650,11 @@ export default function AnalyticsTemplate({
         throw new Error("No authentication token found");
       }
 
-      const startDateValue = new Date(startDate + 'T00:00:00.000Z');
-      const endDateValue = new Date(endDate + 'T23:59:59.000Z');
+      const { startDateValue, endDateValue } = getDruidAdserverPanelIntervalForView(
+        viewMode,
+        startDate,
+        endDate
+      );
 
       const beginDate = new Date(startDateValue.toISOString()).toISOString().replace('Z', '+00:00');
       const endDateFormatted = new Date(endDateValue.toISOString()).toISOString().replace('Z', '+00:00');
@@ -1644,7 +1682,8 @@ export default function AnalyticsTemplate({
           "Content-Type": "application/json",
           "x-ayl-auth-token": token
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        skipClientCache: viewMode === 'hourly',
       });
 
       if (!response.ok) {
@@ -1701,8 +1740,11 @@ export default function AnalyticsTemplate({
         throw new Error("No authentication token found");
       }
 
-      const startDateValue = new Date(startDate + 'T00:00:00.000Z');
-      const endDateValue = new Date(endDate + 'T23:59:59.999Z');
+      const { startDateValue, endDateValue } = getDruidAdserverPanelIntervalForView(
+        viewMode,
+        startDate,
+        endDate
+      );
 
       const beginDate = startDateValue.toISOString();
       const endDateFormatted = endDateValue.toISOString();
@@ -1737,7 +1779,8 @@ export default function AnalyticsTemplate({
           "Content-Type": "application/json",
           "x-ayl-auth-token": token
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        skipClientCache: viewMode === 'hourly',
       });
 
       if (!response.ok) {
@@ -1818,8 +1861,11 @@ export default function AnalyticsTemplate({
         throw new Error("No authentication token found");
       }
 
-      const startDateValue = new Date(startDate + 'T00:00:00.000Z');
-      const endDateValue = new Date(endDate + 'T23:59:59.000Z');
+      const { startDateValue, endDateValue } = getDruidAdserverPanelIntervalForView(
+        viewMode,
+        startDate,
+        endDate
+      );
 
       const apiFilters = buildFiltersForRequest(filters);
       const payload = {
@@ -1844,7 +1890,8 @@ export default function AnalyticsTemplate({
           "Content-Type": "application/json",
           "x-ayl-auth-token": token
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        skipClientCache: viewMode === 'hourly',
       });
 
       if (!response.ok) {
@@ -1907,8 +1954,11 @@ export default function AnalyticsTemplate({
         throw new Error("No authentication token found");
       }
 
-      const startDateValue = new Date(startDate + 'T00:00:00.000Z');
-      const endDateValue = new Date(endDate + 'T23:59:59.999Z');
+      const { startDateValue, endDateValue } = getDruidAdserverPanelIntervalForView(
+        viewMode,
+        startDate,
+        endDate
+      );
 
       const apiFilters = buildFiltersForRequest(filters);
       const payload = {
@@ -1932,7 +1982,8 @@ export default function AnalyticsTemplate({
           'Content-Type': 'application/json',
           'x-ayl-auth-token': token
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        skipClientCache: viewMode === 'hourly',
       });
 
       if (!response.ok) {
@@ -2045,8 +2096,11 @@ export default function AnalyticsTemplate({
         throw new Error("No authentication token found");
       }
 
-      const startDateValue = new Date(startDate + 'T00:00:00.000Z');
-      const endDateValue = new Date(endDate + 'T23:59:59.000Z');
+      const { startDateValue, endDateValue } = getDruidAdserverPanelIntervalForView(
+        viewMode,
+        startDate,
+        endDate
+      );
 
       const apiFilters = buildFiltersForRequest(filters);
       const payload = {
@@ -2071,7 +2125,8 @@ export default function AnalyticsTemplate({
           "Content-Type": "application/json",
           "x-ayl-auth-token": token
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        skipClientCache: viewMode === 'hourly',
       });
 
       if (!response.ok) {
@@ -2132,8 +2187,11 @@ export default function AnalyticsTemplate({
         throw new Error("No authentication token found");
       }
 
-      const startDateValue = new Date(startDate + 'T00:00:00.000Z');
-      const endDateValue = new Date(endDate + 'T23:59:59.999Z');
+      const { startDateValue, endDateValue } = getDruidAdserverPanelIntervalForView(
+        viewMode,
+        startDate,
+        endDate
+      );
 
       const apiFilters = buildFiltersForRequest(filters);
       const payload = {
@@ -2157,7 +2215,8 @@ export default function AnalyticsTemplate({
           'Content-Type': 'application/json',
           'x-ayl-auth-token': token
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        skipClientCache: viewMode === 'hourly',
       });
 
       if (!response.ok) {
@@ -2294,8 +2353,11 @@ export default function AnalyticsTemplate({
         }
       }
 
-      const startDateValue = new Date(startDate + 'T00:00:00.000Z');
-      const endDateValue = new Date(endDate + 'T23:59:59.000Z');
+      const { startDateValue, endDateValue } = getDruidAdserverPanelIntervalForView(
+        viewMode,
+        startDate,
+        endDate
+      );
 
       const apiFilters = buildFiltersForRequest(filters);
       const base = {
@@ -2332,6 +2394,7 @@ export default function AnalyticsTemplate({
             'x-ayl-auth-token': token,
           },
           body: JSON.stringify(body),
+          skipClientCache: viewMode === 'hourly',
         });
 
       let response = await post(try2d);
@@ -2404,8 +2467,11 @@ export default function AnalyticsTemplate({
         throw new Error("No authentication token found");
       }
 
-      const startDateValue = new Date(startDate + 'T00:00:00.000Z');
-      const endDateValue = new Date(endDate + 'T23:59:59.999Z');
+      const { startDateValue, endDateValue } = getDruidAdserverPanelIntervalForView(
+        viewMode,
+        startDate,
+        endDate
+      );
 
       const apiFilters = buildFiltersForRequestWithSiteDomain(filters, siteDomain, rowRealmPublisher);
       const payload = {
@@ -2426,7 +2492,8 @@ export default function AnalyticsTemplate({
           'Content-Type': 'application/json',
           'x-ayl-auth-token': token
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        skipClientCache: viewMode === 'hourly',
       });
 
       if (!response.ok) {
@@ -2519,8 +2586,11 @@ export default function AnalyticsTemplate({
         throw new Error("No authentication token found");
       }
 
-      const startDateValue = new Date(startDate + 'T00:00:00.000Z');
-      const endDateValue = new Date(endDate + 'T23:59:59.000Z');
+      const { startDateValue, endDateValue } = getDruidAdserverPanelIntervalForView(
+        viewMode,
+        startDate,
+        endDate
+      );
 
       const apiFilters = buildFiltersForRequest(filters);
       const payload = {
@@ -2545,7 +2615,8 @@ export default function AnalyticsTemplate({
           "Content-Type": "application/json",
           "x-ayl-auth-token": token
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        skipClientCache: viewMode === 'hourly',
       });
 
       if (!response.ok) {
@@ -3175,6 +3246,14 @@ export default function AnalyticsTemplate({
   // Ensure daily view picks up current time range on mode switch
   useEffect(() => {
     if (!entityId || viewMode !== 'daily') return;
+    const dates = getEffectiveDatesForFilterPanels();
+    setStartDate((prev) => (prev !== dates.start ? dates.start : prev));
+    setEndDate((prev) => (prev !== dates.end ? dates.end : prev));
+  }, [entityId, viewMode]);
+
+  // Real-time (hourly): right-panel date state must be "today" so Period labels and filters match the live query
+  useEffect(() => {
+    if (!entityId || viewMode !== 'hourly') return;
     const dates = getEffectiveDatesForFilterPanels();
     setStartDate((prev) => (prev !== dates.start ? dates.start : prev));
     setEndDate((prev) => (prev !== dates.end ? dates.end : prev));
