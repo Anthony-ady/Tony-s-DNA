@@ -1,13 +1,20 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Download, Plus } from "lucide-react";
+import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Download, Plus, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { authService } from "@/services/authService";
 import { useNavigate } from "react-router-dom";
 import { API_ENDPOINTS } from "@/config/api";
 import creativeScanPolicies from "../Realm/creative-scan-policies.json";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip } from "recharts";
+import { toast } from "sonner";
+import {
+  readBlockedCreativesCacheMeta,
+  readBlockedCreativesItemsFromIdb,
+  writeBlockedCreativesCache,
+  BLOCKED_CREATIVES_CACHE_TTL_MS,
+} from "@/utils/blockedCreativesCache";
 
 const POLICY_NAME_MAP = (Array.isArray(creativeScanPolicies) ? creativeScanPolicies : []).reduce(
   (acc, p) => {
@@ -28,8 +35,18 @@ function sourceDisplayLabel(source) {
 export default function BlockedCreativeManagement() {
   const { getToken } = useAuth();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const [allItems, setAllItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const m = readBlockedCreativesCacheMeta(BLOCKED_CREATIVES_CACHE_TTL_MS);
+    if (m?.kind === "inline") return false;
+    return true;
+  });
+  const [allItems, setAllItems] = useState(() => {
+    if (typeof window === "undefined") return [];
+    const m = readBlockedCreativesCacheMeta(BLOCKED_CREATIVES_CACHE_TTL_MS);
+    if (m?.kind === "inline") return m.items;
+    return [];
+  });
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
@@ -66,17 +83,74 @@ export default function BlockedCreativeManagement() {
     }
   };
 
-  const fetchAll = async () => {
+  const fetchAllFromNetwork = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+
+    const persist = async (items) => {
+      const r = await writeBlockedCreativesCache(items);
+      if (r === "none" && items.length > 0) {
+        toast.warning("Cache navigateur", {
+          id: "blocked-creatives-cache-write-fail",
+          description:
+            "La liste n’a pas pu être enregistrée (quota). Rechargement de la page = nouveaux appels API.",
+        });
+      }
+    };
+
     try {
       const token = getToken();
       if (!token) throw new Error("No authentication token available");
 
+      const headers = { "x-ayl-auth-token": token, "Content-Type": "application/json" };
+
+      /** Probe: one row to read Total (e.g. "Total": 70716) without loading the full list. */
+      const probeRes = await fetch(API_ENDPOINTS.BLOCKED_CREATIVE_SEARCH, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ From: 0, Size: 1 }),
+      });
+
+      if (!probeRes.ok) {
+        if (probeRes.status === 401) {
+          authService.handleUnauthorized(navigate);
+          return;
+        }
+        throw new Error(`HTTP error! status: ${probeRes.status}`);
+      }
+
+      const probeJson = await probeRes.json();
+      const totalRaw = probeJson?.Total ?? probeJson?.total;
+      const total = typeof totalRaw === "number" ? totalRaw : Number(totalRaw);
+
+      if (!Number.isFinite(total) || total < 0) {
+        const fallback = Array.isArray(probeJson?.Data) ? probeJson.Data : [];
+        await persist(fallback);
+        setAllItems(fallback);
+        setCurrentPage(0);
+        return;
+      }
+
+      if (total === 0) {
+        await persist([]);
+        setAllItems([]);
+        setCurrentPage(0);
+        return;
+      }
+
+      /** One full fetch: Size = Total (second round-trip only; probe was the first). */
+      if (total === 1) {
+        const one = Array.isArray(probeJson?.Data) ? probeJson.Data : [];
+        await persist(one);
+        setAllItems(one);
+        setCurrentPage(0);
+        return;
+      }
+
       const response = await fetch(API_ENDPOINTS.BLOCKED_CREATIVE_SEARCH, {
         method: "POST",
-        headers: { "x-ayl-auth-token": token, "Content-Type": "application/json" },
-        body: JSON.stringify({ From: 0, Size: 2000 }),
+        headers,
+        body: JSON.stringify({ From: 0, Size: total }),
       });
 
       if (!response.ok) {
@@ -89,17 +163,51 @@ export default function BlockedCreativeManagement() {
 
       const data = await response.json();
       const list = Array.isArray(data?.Data) ? data.Data : [];
-      setAllItems(list);
+      const next = list.length > total ? list.slice(0, total) : list;
+      await persist(next);
+      setAllItems(next);
       setCurrentPage(0);
     } catch (err) {
       setError(err.message);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [getToken, navigate]);
+
+  const fetchAllFromNetworkRef = useRef(fetchAllFromNetwork);
+  fetchAllFromNetworkRef.current = fetchAllFromNetwork;
 
   useEffect(() => {
-    fetchAll();
+    let cancelled = false;
+    (async () => {
+      const m = readBlockedCreativesCacheMeta(BLOCKED_CREATIVES_CACHE_TTL_MS);
+      if (m?.kind === "inline") {
+        if (!cancelled) setIsLoading(false);
+        return;
+      }
+      if (m?.kind === "pointer") {
+        const fromIdb = await readBlockedCreativesItemsFromIdb();
+        if (cancelled) return;
+        if (Array.isArray(fromIdb) && fromIdb.length > 0) {
+          setAllItems(fromIdb);
+          setIsLoading(false);
+          return;
+        }
+      }
+      if (!cancelled) {
+        await fetchAllFromNetworkRef.current();
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      fetchAllFromNetworkRef.current();
+    }, BLOCKED_CREATIVES_CACHE_TTL_MS);
+    return () => clearInterval(id);
   }, []);
 
   useEffect(() => {
@@ -257,6 +365,17 @@ export default function BlockedCreativeManagement() {
               disabled={isLoading}
             >
               <Plus className="w-4 h-4 mr-1" /> Create
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8"
+              onClick={() => fetchAllFromNetworkRef.current()}
+              disabled={isLoading}
+              title="Recharge la liste via l’API (requêtes attendues). Met à jour le cache pour les prochaines visites dans l’heure."
+            >
+              <RefreshCw className={`w-4 h-4 mr-1 ${isLoading ? "animate-spin" : ""}`} /> Refresh
             </Button>
             <Button variant="outline" size="sm" className="h-8" onClick={exportToCSV} disabled={isLoading}>
               <Download className="w-4 h-4 mr-1" /> Export CSV
