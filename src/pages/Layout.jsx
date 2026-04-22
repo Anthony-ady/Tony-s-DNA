@@ -127,14 +127,15 @@ export default function Layout({ children, currentPageName }) {
     
 
     
-    // Clear cache and refresh dashboard
+    // Clear localStorage API cache and refetch (dashboard + analytics listen for druidCacheCleared)
     const handleRefresh = () => {
         clearCache();
-        // Trigger dashboard refresh if available
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('druidCacheCleared'));
+        }
         if (typeof window !== 'undefined' && window.refreshDashboard) {
             window.refreshDashboard();
-        } else {
-            // Reload the page if dashboard refresh is not available
+        } else if (typeof window !== 'undefined' && !isAnalyticsPage()) {
             window.location.reload();
         }
     };
@@ -1507,6 +1508,15 @@ export default function Layout({ children, currentPageName }) {
                         {/* Analytics Controls - Mobile */}
                         {isAnalyticsPage() && (
                             <div className="space-y-2">
+                                <Button
+                                    onClick={handleRefresh}
+                                    variant="outline"
+                                    className="w-full h-8 text-xs font-medium"
+                                    type="button"
+                                >
+                                    <RefreshCw className="w-3.5 h-3.5 mr-1" />
+                                    Refresh
+                                </Button>
                                 <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm w-full">
                                     <button
                                         onClick={() => setAnalyticsViewMode(analyticsViewMode === 'hourly' ? 'daily' : 'hourly')}
@@ -2203,6 +2213,15 @@ export default function Layout({ children, currentPageName }) {
                             </div>
                         ) : isAnalyticsPage() ? (
                             <div className="flex items-center gap-3">
+                                <Button
+                                    onClick={handleRefresh}
+                                    variant="outline"
+                                    className="px-3 py-1.5 text-sm font-medium"
+                                    type="button"
+                                >
+                                    <RefreshCw className="w-4 h-4 mr-1.5" />
+                                    Refresh
+                                </Button>
                                 <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
                                     {['30d', '20d', '14d', '7d', '5d'].map((range) => (
                                         <button

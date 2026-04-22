@@ -706,6 +706,22 @@ const EditDeal = () => {
             Openers: normalizeContentOpeners(next.Content.Openers),
           };
         }
+        if (
+          (!Array.isArray(next.WhitelistSiteDomains) || next.WhitelistSiteDomains.length === 0) &&
+          next.WhitelistSiteDomainsMap &&
+          typeof next.WhitelistSiteDomainsMap === 'object'
+        ) {
+          const fromMap = Object.keys(next.WhitelistSiteDomainsMap);
+          if (fromMap.length > 0) next.WhitelistSiteDomains = fromMap;
+        }
+        if (
+          (!Array.isArray(next.BlacklistSiteDomains) || next.BlacklistSiteDomains.length === 0) &&
+          next.BlacklistSiteDomainsMap &&
+          typeof next.BlacklistSiteDomainsMap === 'object'
+        ) {
+          const fromMap = Object.keys(next.BlacklistSiteDomainsMap);
+          if (fromMap.length > 0) next.BlacklistSiteDomains = fromMap;
+        }
         setDealData(next);
       }
       setDealName(prev => prev || data.Data?.Name || 'Deal');
@@ -847,7 +863,18 @@ const EditDeal = () => {
     const cleaned = {};
     for (const [key, value] of Object.entries(obj)) {
       if (value !== null && value !== undefined) {
-        cleaned[key] = removeNullFields(value);
+        // Whitelist/Blacklist *Map* objects store { "domain": null, ... } — if we recurse, every
+        // entry is dropped and the payload becomes { WhitelistSiteDomainsMap: {} }, which the
+        // API can treat as “clear the list” even when WhitelistSiteDomains is still set.
+        if (
+          (key === 'WhitelistSiteDomainsMap' || key === 'BlacklistSiteDomainsMap') &&
+          typeof value === 'object' &&
+          !Array.isArray(value)
+        ) {
+          cleaned[key] = { ...value };
+        } else {
+          cleaned[key] = removeNullFields(value);
+        }
       }
     }
     return cleaned;
@@ -1750,11 +1777,18 @@ const EditDeal = () => {
     }));
   };
 
-  const domainsToText = (arr) => (Array.isArray(arr) ? arr.join('\n') : '');
-  const textToDomains = (text) => text.split(/[\n,]/).map((s) => s.trim()).filter(Boolean);
+  const domainsToText = (arr, mapFallback) => {
+    if (Array.isArray(arr) && arr.length > 0) return arr.join('\n');
+    if (mapFallback && typeof mapFallback === 'object' && !Array.isArray(mapFallback)) {
+      const keys = Object.keys(mapFallback);
+      if (keys.length > 0) return keys.join('\n');
+    }
+    return Array.isArray(arr) ? arr.join('\n') : '';
+  };
+  const textToDomains = (text) => text.split(/[\n,]/).map((s) => s.trim()).filter((s) => s.length > 0);
 
   const linesToNullableArray = (text) => {
-    const arr = text.split(/[\n,]/).map((s) => s.trim()).filter(Boolean);
+    const arr = text.split(/[\n,]/).map((s) => s.trim()).filter((s) => s.length > 0);
     return arr.length ? arr : null;
   };
 
@@ -3347,7 +3381,7 @@ const EditDeal = () => {
                     <p className="text-xs text-slate-500">Syncs <span className="font-mono">WhitelistSiteDomainsMap</span> (values null).</p>
                     <Textarea
                       rows={5}
-                      value={domainsToText(dealData.WhitelistSiteDomains)}
+                      value={domainsToText(dealData.WhitelistSiteDomains, dealData.WhitelistSiteDomainsMap)}
                       onChange={(e) => updateWhitelistSiteDomains(e.target.value)}
                       placeholder="example.com"
                     />
@@ -3357,7 +3391,7 @@ const EditDeal = () => {
                     <p className="text-xs text-slate-500">Syncs <span className="font-mono">BlacklistSiteDomainsMap</span>.</p>
                     <Textarea
                       rows={5}
-                      value={domainsToText(dealData.BlacklistSiteDomains)}
+                      value={domainsToText(dealData.BlacklistSiteDomains, dealData.BlacklistSiteDomainsMap)}
                       onChange={(e) => updateBlacklistSiteDomains(e.target.value)}
                       placeholder="Add blocked domains"
                     />

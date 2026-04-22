@@ -24,6 +24,22 @@ const generateCacheKey = (url, method = 'GET', body = null) => {
   return `${method}:${url}:${bodyStr}`;
 };
 
+/**
+ * Hourly (PT1H) = “Real-time” in dashboards. Must not use long-lived localStorage cache
+ * (exact or covering) or the UI shows stale intraday data until full reload.
+ */
+export const isDruidHourlyRequestBody = (body) => {
+  if (!body || typeof body !== 'object') return false;
+  const g = body.Granularity;
+  if (g == null) return false;
+  if (typeof g === 'string') return /^PT1H$/i.test(g) || g === 'hour' || g === 'hourly';
+  if (typeof g === 'object' && (g.type === 'period' || g.period)) {
+    const p = g.period || g.Period;
+    if (typeof p === 'string' && /^PT1H$/i.test(p)) return true;
+  }
+  return false;
+};
+
 // Get cache from localStorage (limited to ~5-10MB)
 const getCachedData = (cacheKey) => {
   if (!isCacheEnabled() || typeof window === 'undefined') return null;
@@ -411,9 +427,14 @@ export const cachedFetch = async (url, options = {}) => {
   const method = options.method || 'GET';
   const body = options.body ? (typeof options.body === 'string' ? JSON.parse(options.body) : options.body) : null;
   const cacheKey = generateCacheKey(url, method, body);
-  
-  // Try to get from cache first (exact match)
-  if (isCacheEnabled()) {
+  const skipClientCache = isDruidHourlyRequestBody(body);
+
+  if (skipClientCache) {
+    console.log('⏱️ Real-time (PT1H): bypassing localStorage API cache for:', url);
+  }
+
+  // Try to get from cache first (exact match) — never for hourly granularity
+  if (isCacheEnabled() && !skipClientCache) {
     const cached = getCachedData(cacheKey);
     if (cached) {
       console.log('📦 Using exact cached response for:', url);
@@ -484,18 +505,18 @@ export const cachedFetch = async (url, options = {}) => {
     throw error;
   }
   
-  // Cache successful responses
+  // Cache successful responses (skip hourly: would freeze “today” in localStorage)
   let dataForCache = null;
   try {
     dataForCache = await response.clone().json();
-    if (response.ok && isCacheEnabled()) {
+    if (response.ok && isCacheEnabled() && !skipClientCache) {
       saveToCache(cacheKey, dataForCache);
     }
   } catch (e) {
     try {
       const text = await response.clone().text();
       dataForCache = text;
-      if (response.ok && isCacheEnabled()) {
+      if (response.ok && isCacheEnabled() && !skipClientCache) {
         saveToCache(cacheKey, text);
       }
     } catch (e2) {

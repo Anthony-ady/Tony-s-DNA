@@ -3443,6 +3443,20 @@ export default function AnalyticsTemplate({
     }
   };
 
+  const fetchAnalyticsDataRef = useRef(fetchAnalyticsData);
+  fetchAnalyticsDataRef.current = fetchAnalyticsData;
+  useEffect(() => {
+    const onDruidCacheCleared = () => {
+      try {
+        void fetchAnalyticsDataRef.current();
+      } catch (e) {
+        console.warn('Analytics refetch after druidCacheCleared:', e);
+      }
+    };
+    window.addEventListener('druidCacheCleared', onDruidCacheCleared);
+    return () => window.removeEventListener('druidCacheCleared', onDruidCacheCleared);
+  }, []);
+
   // Default summary cards renderer matching DashboardTemplate colors
   const defaultRenderSummaryCards = (summaryStatsArg, viewModeArg) => {
     if (viewModeArg !== 'hourly') {
