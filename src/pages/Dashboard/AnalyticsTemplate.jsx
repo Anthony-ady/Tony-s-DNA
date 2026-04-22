@@ -188,6 +188,8 @@ export default function AnalyticsTemplate({
   const [seatSortConfig, setSeatSortConfig] = useState({ key: null, direction: 'asc' });
   const [adDomainSortConfig, setAdDomainSortConfig] = useState({ key: null, direction: 'asc' });
   const [siteDomainSortConfig, setSiteDomainSortConfig] = useState({ key: null, direction: 'asc' });
+  /** Uid -> Name for SITE DOMAIN table (from REALMS_SEARCH). */
+  const [realmNameById, setRealmNameById] = useState({});
   const [geoSortConfig, setGeoSortConfig] = useState({ key: null, direction: 'asc' });
   const [adKindSortConfig, setAdKindSortConfig] = useState({ key: null, direction: 'asc' });
   const [deviceSortConfig, setDeviceSortConfig] = useState({ key: null, direction: 'asc' });
@@ -1087,9 +1089,15 @@ export default function AnalyticsTemplate({
     return Object.keys(apiFilters).length > 0 ? apiFilters : undefined;
   };
 
-  /** Entity filters plus optional SiteDomain (adserver_stats / DRUID). */
-  const buildFiltersForRequestWithSiteDomain = (filters, siteDomain) => {
+  /** Entity filters plus optional SiteDomain (adserver_stats / DRUID). Optional rowRealmId narrows drill-down to (realm, domain). */
+  const buildFiltersForRequestWithSiteDomain = (filters, siteDomain, rowRealmPublisher = null) => {
     const merged = { ...(buildFiltersForRequest(filters) || {}) };
+    if (rowRealmPublisher) {
+      merged.RealmPublisher = {
+        Value: [rowRealmPublisher],
+        Operator: 'in',
+      };
+    }
     if (siteDomain && siteDomain !== 'Unknown') {
       merged.SiteDomain = {
         Value: [siteDomain],
@@ -1097,6 +1105,12 @@ export default function AnalyticsTemplate({
       };
     }
     return Object.keys(merged).length > 0 ? merged : undefined;
+  };
+
+  const getSiteDomainRowKey = (item) => {
+    const d = item?.siteDomain || item?.siteName || '';
+    const r = item?.realmPublisherId || '';
+    return r && d ? `${r}::${d}` : d;
   };
 
   const getAdDomainRowKey = (item) =>
@@ -2250,35 +2264,82 @@ export default function AnalyticsTemplate({
         throw new Error("No authentication token found");
       }
 
+      let nameLookup = { ...realmNameById };
+      if (Object.keys(nameLookup).length === 0) {
+        try {
+          const res = await cachedFetch(API_ENDPOINTS.REALMS_SEARCH, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-ayl-auth-token': token,
+            },
+            body: JSON.stringify({
+              From: 0,
+              Size: 500,
+              Order: [{ Field: 'Name', Operator: 'asc' }],
+              Filters: [],
+            }),
+          });
+          if (res.ok) {
+            const j = await res.json();
+            const m = {};
+            (j.Data || []).forEach((realm) => {
+              if (realm?.Uid) m[realm.Uid] = realm.Name;
+            });
+            nameLookup = m;
+            setRealmNameById(m);
+          }
+        } catch (e) {
+          console.warn('Could not load realm names for SITE DOMAIN panel:', e);
+        }
+      }
+
       const startDateValue = new Date(startDate + 'T00:00:00.000Z');
       const endDateValue = new Date(endDate + 'T23:59:59.000Z');
 
       const apiFilters = buildFiltersForRequest(filters);
-      const payload = {
-        "Intervals": [{
-          "Begin": startDateValue.toISOString(),
-          "End": endDateValue.toISOString()
-        }],
-        "Metrics": ["PricePublisher", "PriceAdvertiser_PublisherSide","CLICK", "IMPRESSION"],
-        "Dimensions": ["SiteDomain"],
-        "Granularity": "all",
-        "Datasource": "adserver_stats",
-        "TimeZone": "Etc/GMT",
-        "Size": 250,
-        "OrderBy": "PriceAdvertiser_PublisherSide",
-        "OrderOp": "DESC",
-        ...(apiFilters && { Filters: apiFilters })
+      const base = {
+        Intervals: [
+          {
+            Begin: startDateValue.toISOString(),
+            End: endDateValue.toISOString(),
+          },
+        ],
+        Metrics: [
+          'PricePublisher',
+          'PriceAdvertiser_PublisherSide',
+          'CLICK',
+          'IMPRESSION',
+        ],
+        Granularity: 'all',
+        Datasource: 'adserver_stats',
+        TimeZone: 'Etc/GMT',
+        Size: 500,
+        OrderBy: 'PriceAdvertiser_PublisherSide',
+        OrderOp: 'DESC',
+        ...(apiFilters && { Filters: apiFilters }),
       };
 
-      const response = await cachedFetch(API_ENDPOINTS.DRUID_SEARCH, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-ayl-auth-token": token
-        },
-        body: JSON.stringify(payload)
-      });
+      // Prefer realm × site (single query). Some backends may reject multiple dimensions; fall back to SiteDomain only.
+      const try2d = { ...base, Dimensions: ['RealmPublisher', 'SiteDomain'] };
+      const try1d = { ...base, Dimensions: ['SiteDomain'] };
 
+      const post = (body) =>
+        cachedFetch(API_ENDPOINTS.DRUID_SEARCH, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-ayl-auth-token': token,
+          },
+          body: JSON.stringify(body),
+        });
+
+      let response = await post(try2d);
+      if (!response.ok) {
+        const errText = await response.text();
+        console.warn('SITE DOMAIN: 2D query failed, using SiteDomain only:', response.status, errText);
+        response = await post(try1d);
+      }
       if (!response.ok) {
         const errorMessage = formatError(new Error(`HTTP error! status: ${response.status}`), response);
         throw new Error(errorMessage);
@@ -2287,9 +2348,17 @@ export default function AnalyticsTemplate({
       const result = await response.json();
       const dataArray = Array.isArray(result?.Data) ? result.Data : Array.isArray(result) ? result : [];
 
+      const contextRealmId = typeof window !== 'undefined' ? localStorage.getItem('selected-realm-id') : null;
+      const contextRealmName = contextRealmId && nameLookup[contextRealmId] ? nameLookup[contextRealmId] : null;
+
       const processedData = dataArray
         .map((item) => {
           const siteDomain = item.SiteDomain || 'Unknown';
+          const realmPublisherId =
+            item.RealmPublisher ?? item.realmPublisher ?? item.realmId ?? null;
+          const realmName = realmPublisherId
+            ? nameLookup[realmPublisherId] || null
+            : contextRealmName;
           const dspRevenue = item.PriceAdvertiser_PublisherSide || 0;
           const publisherCosts = item.PricePublisher || 0;
           const impressions = item.IMPRESSION ?? item.Impression ?? 0;
@@ -2297,18 +2366,20 @@ export default function AnalyticsTemplate({
           const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
           const margin = dspRevenue - publisherCosts;
           const marginPercentage = dspRevenue > 0 ? ((margin / dspRevenue) * 100).toFixed(2) : '0.00';
-          
+
           return {
             ...item,
             siteDomain,
             siteName: siteDomain,
+            realmPublisherId: realmPublisherId || null,
+            realmName: realmName || '—',
             PriceAdvertiser_PublisherSide: dspRevenue,
             PricePublisher: publisherCosts,
             impressions,
             clicks,
             ctr,
             margin,
-            marginPercentage
+            marginPercentage,
           };
         })
         .sort((a, b) => (b.PriceAdvertiser_PublisherSide || 0) - (a.PriceAdvertiser_PublisherSide || 0));
@@ -2324,7 +2395,7 @@ export default function AnalyticsTemplate({
   };
 
   // Daily breakdown for one site domain (adserver_stats, P1D)
-  const fetchSiteDomainDetailData = async (siteDomain, filters = {}) => {
+  const fetchSiteDomainDetailData = async (siteDomain, filters = {}, rowRealmPublisher = null) => {
     setLoadingSiteDomainDetail(true);
     setSiteDomainDetailData([]);
     try {
@@ -2336,7 +2407,7 @@ export default function AnalyticsTemplate({
       const startDateValue = new Date(startDate + 'T00:00:00.000Z');
       const endDateValue = new Date(endDate + 'T23:59:59.999Z');
 
-      const apiFilters = buildFiltersForRequestWithSiteDomain(filters, siteDomain);
+      const apiFilters = buildFiltersForRequestWithSiteDomain(filters, siteDomain, rowRealmPublisher);
       const payload = {
         Intervals: [{
           Begin: startDateValue.toISOString(),
@@ -2426,15 +2497,16 @@ export default function AnalyticsTemplate({
     }
   };
 
-  const handleSiteDomainRowClick = async (domain, filters = {}) => {
-    const key = domain || '';
-    if (!key || key === 'Unknown') return;
+  const handleSiteDomainRowClick = async (item, filters = {}) => {
+    const siteDomain = item?.siteDomain || item?.siteName || '';
+    const key = getSiteDomainRowKey(item);
+    if (!key || (siteDomain || '') === 'Unknown') return;
     if (selectedSiteDomain === key) {
       setSelectedSiteDomain(null);
       setSiteDomainDetailData([]);
     } else {
       setSelectedSiteDomain(key);
-      await fetchSiteDomainDetailData(key, filters);
+      await fetchSiteDomainDetailData(siteDomain, filters, item?.realmPublisherId || null);
     }
   };
 
@@ -2926,8 +2998,9 @@ export default function AnalyticsTemplate({
 
   const exportSiteDomainDataToCSV = () => {
     if (siteDomainData.length === 0) return;
-    const headers = ['Site Domain', 'DSP Revenue', 'Publisher Costs', 'ADY Margin', 'Impressions', 'Click', 'CTR', 'Margin %'];
+    const headers = ['Realm', 'Site Domain', 'DSP Revenue', 'Publisher Costs', 'ADY Margin', 'Impressions', 'Click', 'CTR', 'Margin %'];
     const rows = siteDomainData.map((item) => [
+      item.realmName || '—',
       item.siteDomain || 'Unknown',
       ((item.PriceAdvertiser_PublisherSide || 0) / 1000000).toFixed(2),
       ((item.PricePublisher || 0) / 1000000).toFixed(2),
@@ -5932,6 +6005,7 @@ export default function AnalyticsTemplate({
                 <Table className="text-xs sm:text-sm w-full">
                   <TableHeader>
                     <TableRow>
+                      {renderSortableHeader("Realm", "realmName", siteDomainSortConfig, handleSiteDomainSort)}
                       {renderSortableHeader("Site Domain", "siteDomain", siteDomainSortConfig, handleSiteDomainSort)}
                       {renderSortableHeader("DSP Revenue", "PriceAdvertiser_PublisherSide", siteDomainSortConfig, handleSiteDomainSort)}
                       {renderSortableHeader("Publisher Costs", "PricePublisher", siteDomainSortConfig, handleSiteDomainSort)}
@@ -5945,14 +6019,18 @@ export default function AnalyticsTemplate({
                   <TableBody>
                     {siteDomainData.length > 0 ? (
                       siteDomainData.map((item, index) => {
+                        const rowKey = getSiteDomainRowKey(item);
                         const domainKey = item.siteDomain || item.siteName || '';
-                        const isOpen = selectedSiteDomain === domainKey;
+                        const isOpen = selectedSiteDomain === rowKey;
                         return (
-                          <React.Fragment key={`sd-${index}-${domainKey || 'unknown'}`}>
+                          <React.Fragment key={`sd-${index}-${rowKey || 'unknown'}`}>
                             <TableRow
                               className={`cursor-pointer hover:bg-slate-50 ${isOpen ? 'bg-blue-50' : ''}`}
-                              onClick={() => handleSiteDomainRowClick(domainKey, entityFilters)}
+                              onClick={() => handleSiteDomainRowClick(item, entityFilters)}
                             >
+                              <TableCell className="text-center font-medium text-slate-800 max-w-[10rem] truncate" title={item.realmName || '—'}>
+                                {item.realmName || '—'}
+                              </TableCell>
                               <TableCell className="text-center font-medium">
                                 <span className="inline-flex items-center justify-center gap-1.5">
                                   {isOpen ? (
@@ -5981,7 +6059,7 @@ export default function AnalyticsTemplate({
                             </TableRow>
                             {isOpen && (
                               <TableRow>
-                                <TableCell colSpan={8} className="p-0 bg-slate-50">
+                                <TableCell colSpan={9} className="p-0 bg-slate-50">
                                   {loadingSiteDomainDetail ? (
                                     <div className="flex items-center justify-center py-8">
                                       <Loader2 className="w-5 h-5 animate-spin text-[rgb(75,99,226)]" />
@@ -5990,7 +6068,7 @@ export default function AnalyticsTemplate({
                                   ) : siteDomainDetailData.length > 0 ? (
                                     <div className="p-4">
                                       <h3 className="text-sm font-semibold mb-3 text-slate-700">
-                                        {domainKey} — by day
+                                        {item.realmName ? `${item.realmName} · ` : ''}{domainKey} — by day
                                       </h3>
                                       <Table className="text-xs w-full">
                                         <TableHeader>
@@ -6042,7 +6120,7 @@ export default function AnalyticsTemplate({
                       })
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8 text-slate-500">No SITE DOMAIN data available</TableCell>
+                        <TableCell colSpan={9} className="text-center py-8 text-slate-500">No SITE DOMAIN data available</TableCell>
                       </TableRow>
                     )}
                   </TableBody>
