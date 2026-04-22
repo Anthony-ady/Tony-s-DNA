@@ -28,7 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from '../../components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Building2, Loader2, Save, X, AlertCircle, AlertTriangle, Users, ClipboardCopy, Globe2, Clock3, AppWindow, Monitor, Video, ImageIcon, Layers, Film, Target as TargetIcon, FileText, DollarSign, Smartphone, Sparkles, Search, Trash2, ChevronDown } from 'lucide-react';
+import { Building2, Loader2, Save, X, AlertCircle, AlertTriangle, Users, ClipboardCopy, Globe2, Clock3, AppWindow, Monitor, Video, ImageIcon, Layers, Film, Target as TargetIcon, FileText, DollarSign, Smartphone, Sparkles, Search, Trash2, ChevronDown, UserCheck } from 'lucide-react';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { authService } from '../../services/authService';
 import { toast } from 'sonner';
@@ -43,7 +43,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-
 const DEVICE_OPTIONS = ['DESKTOP', 'MOBILE', 'TABLET'];
 const BROWSER_OPTIONS = [
   'CHROME',
@@ -102,6 +101,7 @@ const GEO_SEARCH_BODY = {
 const REGION_OPTIONS = ['Internal', 'FR', 'UK', 'US', 'EMEA', 'APAC'];
 
 const defaultTargeting = () => ({
+  /** Realm UIDs (ad network inclusion; API may return an array of strings). */
   AdNetwork: null,
   AdUnits: [],
   Apps: null,
@@ -110,6 +110,7 @@ const defaultTargeting = () => ({
   Devices: [],
   ExcludedIABCategories: null,
   ExcludedPlacements: null,
+  ExcludedAppBundleIds: null,
   ExcludedPublishers: null,
   ExcludedSites: null,
   ExcludedOpenwebSources: null,
@@ -124,6 +125,9 @@ const defaultTargeting = () => ({
   Publishers: null,
   Segments: null,
   Semantic: null,
+  /** App bundle allow/deny — same namespace as `Apps` (inventory). */
+  BlacklistAppBundles: null,
+  WhitelistAppBundles: null,
 });
 
 const MULTI_AD_KIND_A = 'AD_RAW_VIDEO';
@@ -317,11 +321,9 @@ const EditDeal = () => {
   const seatCatalogReadyRef = useRef(new Set());
   const seatCatalogInFlightRef = useRef(new Set());
   const [brokerSearchQuery, setBrokerSearchQuery] = useState('');
-  const [brokerSearchOpen, setBrokerSearchOpen] = useState(false);
-  const [brokerSearchResults, setBrokerSearchResults] = useState([]);
-  const [brokerSearchLoading, setBrokerSearchLoading] = useState(false);
-  const [brokerSearchError, setBrokerSearchError] = useState('');
-  const [addingBrokerUid, setAddingBrokerUid] = useState(null);
+  /** { uid, name }[] from POST /broker_partners/search (catalog for picker). */
+  const [brokerCatalogList, setBrokerCatalogList] = useState(() => []);
+  const [brokerCatalogLoading, setBrokerCatalogLoading] = useState(false);
   const [brokerNameByUid, setBrokerNameByUid] = useState(() => ({}));
   const [geoSearchQuery, setGeoSearchQuery] = useState('');
   const [geoSearchResults, setGeoSearchResults] = useState([]);
@@ -332,6 +334,12 @@ const EditDeal = () => {
   const [languagesLoading, setLanguagesLoading] = useState(false);
   const [languagesError, setLanguagesError] = useState('');
   const [langSearchQuery, setLangSearchQuery] = useState('');
+  /** Uid → Name from POST /realms/search (for Targeting.AdNetwork realm UIDs). */
+  const [realmNameByUid, setRealmNameByUid] = useState(() => ({}));
+  /** Sorted { Uid, Name }[] for the ad-network realm picker. */
+  const [adNetworkRealmList, setAdNetworkRealmList] = useState(() => []);
+  const [adNetworkRealmsLoading, setAdNetworkRealmsLoading] = useState(false);
+  const [realmAdSearchQuery, setRealmAdSearchQuery] = useState('');
   const [resolvedCompanyName, setResolvedCompanyName] = useState('');
   const [resolvedRealmName, setResolvedRealmName] = useState('');
   const [resolvedSaleName, setResolvedSaleName] = useState('');
@@ -369,8 +377,6 @@ const EditDeal = () => {
     partnerSeatSearchRootRefs.current = {};
     setBrokerNameByUid({});
     setBrokerSearchQuery('');
-    setBrokerSearchOpen(false);
-    setBrokerSearchResults([]);
     setExcludedDealNameByUid({});
     setExcludedDealSearchQuery('');
     setExcludedDealSearchOpen(false);
@@ -450,6 +456,118 @@ const EditDeal = () => {
       }
     };
     load();
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      const token = authService.getToken();
+      if (!token) return;
+      setAdNetworkRealmsLoading(true);
+      try {
+        const response = await fetch(API_ENDPOINTS.REALMS_SEARCH, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-ayl-auth-token': token,
+          },
+          body: JSON.stringify({
+            From: 0,
+            Size: 500,
+            Order: [{ Field: 'Name', Operator: 'asc' }],
+            Filters: [],
+          }),
+        });
+        if (response.status === 401) {
+          authService.handleUnauthorized?.(navigate);
+          return;
+        }
+        if (!response.ok) return;
+        const data = await response.json();
+        const list = data?.Data;
+        if (!Array.isArray(list) || cancelled) return;
+        const m = {};
+        const rows = [];
+        for (const r of list) {
+          if (r && r.Uid) {
+            const name = typeof r.Name === 'string' && r.Name.trim() ? r.Name.trim() : '—';
+            m[r.Uid] = typeof r.Name === 'string' && r.Name.trim() ? r.Name : '';
+            rows.push({ Uid: r.Uid, Name: name });
+          }
+        }
+        rows.sort((a, b) => a.Name.localeCompare(b.Name, undefined, { sensitivity: 'base' }));
+        if (!cancelled) {
+          setRealmNameByUid(m);
+          setAdNetworkRealmList(rows);
+        }
+      } catch (e) {
+        console.error('Error loading realms for AdNetwork mapping:', e);
+      } finally {
+        if (!cancelled) setAdNetworkRealmsLoading(false);
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      const token = authService.getToken();
+      if (!token) return;
+      setBrokerCatalogLoading(true);
+      try {
+        const response = await fetch(API_ENDPOINTS.BROKER_PARTNERS_SEARCH, {
+          method: 'POST',
+          headers: { 'x-ayl-auth-token': token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            Filters: [{ Field: 'Visibility', Operator: 'in', Value: [0] }],
+            From: 0,
+            Order: [{ Field: 'Name', Operator: 'asc' }],
+            Size: 500,
+          }),
+        });
+        if (response.status === 401) {
+          authService.handleUnauthorized?.(navigate);
+          return;
+        }
+        if (!response.ok) return;
+        const data = await response.json();
+        const list = Array.isArray(data?.Data) ? data.Data : [];
+        if (cancelled) return;
+        const rows = list
+          .map((b) => {
+            const uid = String(b?.uid ?? b?.Uid ?? '').trim();
+            const name =
+              (b?.name && String(b.name).trim()) ||
+              (b?.Name && String(b.Name).trim()) ||
+              (uid || '');
+            return { uid, name: name || uid };
+          })
+          .filter((r) => r.uid);
+        rows.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+        if (!cancelled) {
+          setBrokerCatalogList(rows);
+          setBrokerNameByUid((prev) => {
+            const next = { ...prev };
+            rows.forEach((r) => {
+              if (r.uid && r.name) next[r.uid] = r.name;
+            });
+            return next;
+          });
+        }
+      } catch (e) {
+        console.error('Error loading broker catalog:', e);
+      } finally {
+        if (!cancelled) setBrokerCatalogLoading(false);
+      }
+    };
+    run();
     return () => {
       cancelled = true;
     };
@@ -721,6 +839,27 @@ const EditDeal = () => {
         ) {
           const fromMap = Object.keys(next.BlacklistSiteDomainsMap);
           if (fromMap.length > 0) next.BlacklistSiteDomains = fromMap;
+        }
+        {
+          const t = { ...defaultTargeting(), ...(next.Targeting || {}) };
+          if (next.BlacklistAppBundles != null && t.BlacklistAppBundles == null) {
+            t.BlacklistAppBundles = next.BlacklistAppBundles;
+          }
+          if (next.WhitelistAppBundles != null && t.WhitelistAppBundles == null) {
+            t.WhitelistAppBundles = next.WhitelistAppBundles;
+          }
+          if (next.ExcludedAppBundleIds != null && t.ExcludedAppBundleIds == null) {
+            t.ExcludedAppBundleIds = next.ExcludedAppBundleIds;
+          }
+          if (t.AdNetwork != null && !Array.isArray(t.AdNetwork)) {
+            const s = String(t.AdNetwork).trim();
+            t.AdNetwork = s ? [s] : null;
+          }
+          delete t.ExcludedAdNetwork;
+          next.Targeting = t;
+          delete next.BlacklistAppBundles;
+          delete next.WhitelistAppBundles;
+          delete next.ExcludedAppBundleIds;
         }
         setDealData(next);
       }
@@ -1241,81 +1380,6 @@ const EditDeal = () => {
   }, [partnerSearchQuery, partnerSearchOpen, navigate]);
 
   useEffect(() => {
-    if (!brokerSearchOpen) return;
-    const timer = setTimeout(async () => {
-      const token = authService.getToken();
-      if (!token) return;
-      const q = brokerSearchQuery.trim();
-      const filters = [];
-      if (q) {
-        const isLikelyId = /^[a-f0-9]{32}$/i.test(q);
-        filters.push(
-          isLikelyId
-            ? { Field: 'Uid', Operator: 'match', Value: q }
-            : { Field: '_all', Operator: 'match', Value: q },
-        );
-      }
-      filters.push({ Field: 'Visibility', Operator: 'in', Value: [0] });
-      const brokerBody = {
-        Filters: filters,
-        From: 0,
-        Order: [{ Field: 'Name', Operator: 'asc' }],
-        Size: 50,
-      };
-      const bckey = dealSearchCacheKey('broker_partners', brokerBody);
-      const brokerCached = readDealSearchCache(bckey);
-      if (brokerCached !== null) {
-        setBrokerSearchResults(brokerCached);
-        setBrokerNameByUid((prev) => {
-          const next = { ...prev };
-          brokerCached.forEach((row) => {
-            if (row.uid) next[row.uid] = row.name;
-          });
-          return next;
-        });
-        setBrokerSearchLoading(false);
-        return;
-      }
-      setBrokerSearchLoading(true);
-      setBrokerSearchError('');
-      try {
-        const response = await fetch(API_ENDPOINTS.BROKER_PARTNERS_SEARCH, {
-          method: 'POST',
-          headers: { 'x-ayl-auth-token': token, 'Content-Type': 'application/json' },
-          body: JSON.stringify(brokerBody),
-        });
-        if (!response.ok) {
-          if (response.status === 401) authService.handleUnauthorized?.(navigate);
-          throw new Error(`Broker search failed (${response.status})`);
-        }
-        const data = await response.json();
-        const list = Array.isArray(data?.Data) ? data.Data : [];
-        const mapped = list
-          .map((b) => ({
-            uid: String(b.uid ?? b.Uid ?? '').trim(),
-            name: (b.name && String(b.name).trim()) || String(b.uid ?? b.Uid ?? ''),
-          }))
-          .filter((row) => row.uid);
-        writeDealSearchCache(bckey, mapped);
-        setBrokerSearchResults(mapped);
-        setBrokerNameByUid((prev) => {
-          const next = { ...prev };
-          mapped.forEach((row) => {
-            if (row.uid) next[row.uid] = row.name;
-          });
-          return next;
-        });
-      } catch (e) {
-        setBrokerSearchError(e.message || 'Broker search failed');
-        setBrokerSearchResults([]);
-      } finally {
-        setBrokerSearchLoading(false);
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [brokerSearchQuery, brokerSearchOpen, navigate]);
-
-  useEffect(() => {
     if (!excludedDealSearchOpen) return;
     const timer = setTimeout(async () => {
       const token = authService.getToken();
@@ -1570,27 +1634,16 @@ const EditDeal = () => {
     };
   }, [dealId, excludedDealsListKey, fetchDealNameFromApi]);
 
-  const addBrokerFromSearch = async (uid, searchHitName) => {
+  const addBrokerInclusion = (uid, displayName) => {
     if (!uid) return;
-    setAddingBrokerUid(uid);
-    try {
-      if (searchHitName) {
-        setBrokerNameByUid((prev) => ({ ...prev, [uid]: searchHitName }));
-      }
-      const nameFromApi = await fetchBrokerNameFromApi(uid);
-      if (nameFromApi) {
-        setBrokerNameByUid((prev) => ({ ...prev, [uid]: nameFromApi }));
-      }
-      mergeTargeting((t) => {
-        const cur = Array.isArray(t.BrokerPartners) ? t.BrokerPartners : [];
-        if (cur.some((x) => String(x) === String(uid))) return t;
-        return { ...t, BrokerPartners: [...cur, uid] };
-      });
-      setBrokerSearchOpen(false);
-      setBrokerSearchQuery('');
-    } finally {
-      setAddingBrokerUid(null);
+    if (displayName) {
+      setBrokerNameByUid((prev) => ({ ...prev, [uid]: displayName }));
     }
+    mergeTargeting((t) => {
+      const cur = Array.isArray(t.BrokerPartners) ? t.BrokerPartners : [];
+      if (cur.some((x) => String(x) === String(uid))) return t;
+      return { ...t, BrokerPartners: [...cur, uid] };
+    });
   };
 
   const removeBrokerPartner = (id) => {
@@ -1798,6 +1851,61 @@ const EditDeal = () => {
     return String(arr);
   };
 
+  const adNetworkUids = useMemo(() => {
+    const a = dealData?.Targeting?.AdNetwork;
+    if (a == null) return [];
+    if (Array.isArray(a)) return a.map((u) => String(u).trim()).filter((s) => s.length > 0);
+    const s = String(a).trim();
+    return s ? [s] : [];
+  }, [dealData?.Targeting?.AdNetwork]);
+
+  const filteredRealmCatalog = useMemo(() => {
+    const q = realmAdSearchQuery.trim().toLowerCase();
+    const list = !q
+      ? adNetworkRealmList
+      : adNetworkRealmList.filter(
+          (r) =>
+            (r.Name && r.Name.toLowerCase().includes(q)) || (r.Uid && r.Uid.toLowerCase().includes(q)),
+        );
+    return list.slice(0, 500);
+  }, [adNetworkRealmList, realmAdSearchQuery]);
+
+  const filteredBrokerCatalog = useMemo(() => {
+    const q = brokerSearchQuery.trim().toLowerCase();
+    const list = !q
+      ? brokerCatalogList
+      : brokerCatalogList.filter(
+          (b) =>
+            (b.name && b.name.toLowerCase().includes(q)) || (b.uid && b.uid.toLowerCase().includes(q)),
+        );
+    return list.slice(0, 500);
+  }, [brokerCatalogList, brokerSearchQuery]);
+
+  const realmUidsList = (t, field) => {
+    const v = t?.[field];
+    if (v == null) return [];
+    if (Array.isArray(v)) return v.map((x) => String(x).trim()).filter((s) => s.length > 0);
+    const s = String(v).trim();
+    return s ? [s] : [];
+  };
+
+  const addRealmToAdInclusion = (uid) => {
+    if (!uid) return;
+    mergeTargeting((t) => {
+      const cur = realmUidsList(t, 'AdNetwork');
+      if (cur.includes(uid)) return t;
+      return { ...t, AdNetwork: [...cur, uid] };
+    });
+  };
+
+  const removeRealmAdInclusion = (uid) => {
+    mergeTargeting((t) => {
+      const cur = realmUidsList(t, 'AdNetwork');
+      const next = cur.filter((u) => u !== uid);
+      return { ...t, AdNetwork: next.length ? next : null };
+    });
+  };
+
   const patchTargetingNullableList = (field, text) => {
     mergeTargeting((t) => ({ ...t, [field]: linesToNullableArray(text) }));
   };
@@ -1984,6 +2092,7 @@ const EditDeal = () => {
 
   const sections = [
     { id: 'general', label: 'General info', icon: <Building2 className="w-4 h-4" /> },
+    { id: 'general-params', label: 'DSP WL', icon: <UserCheck className="w-4 h-4" /> },
     { id: 'inventory', label: 'Inventory', icon: <TargetIcon className="w-4 h-4" /> },
     { id: 'openweb-community', label: 'OpenWeb community', icon: <Users className="w-4 h-4" /> },
     { id: 'advanced', label: 'Advanced', icon: <Sparkles className="w-4 h-4" /> },
@@ -2486,23 +2595,294 @@ const EditDeal = () => {
                         </div>
                       </div>
                       <Separator />
-                <div className="space-y-3">
-                  <Label>Deal type</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {dealTypes.map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        className={toggleChipClassName(dealData.ModeKind === option.value)}
-                        onClick={() => updateDealData('ModeKind', option.value)}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:items-start">
+                  <div className="space-y-3">
+                    <Label>Deal type</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {dealTypes.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className={toggleChipClassName(dealData.ModeKind === option.value)}
+                          onClick={() => updateDealData('ModeKind', option.value)}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Distribution channel</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {['APP', 'SITE'].map((ch) => (
+                        <button
+                          key={ch}
+                          type="button"
+                          className={toggleChipClassName(
+                            Array.isArray(dealData.DistributionChannelKinds) &&
+                              dealData.DistributionChannelKinds.includes(ch),
+                          )}
+                          onClick={() => toggleDistributionChannel(ch)}
+                        >
+                          {ch}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
+                <div className="mt-4 flex flex-col flex-wrap gap-4 md:flex-row md:items-center md:justify-between">
+                  {isAdFormatActive('AD_BANNER') && (
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        id="banner-story"
+                        checked={!!dealData.BannerStoryDisplay}
+                        onCheckedChange={(checked) => updateDealData('BannerStoryDisplay', checked)}
+                      />
+                      <div>
+                        <Label htmlFor="banner-story">Banner story display</Label>
+                        <p className="text-xs text-slate-500">Story placement for banner inventory.</p>
+                      </div>
+                    </div>
+                  )}
+                  {(isAdFormatActive('AD_STORY') || isAdFormatActive('AD_TRAFFIC')) && (
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        id="native-story"
+                        checked={!!dealData.StoryDisplay}
+                        onCheckedChange={(checked) => updateDealData('StoryDisplay', checked)}
+                      />
+                      <div>
+                        <Label htmlFor="native-story">Native story display</Label>
+                        <p className="text-xs text-slate-500">Applies to story / native display formats.</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-slate-200 shadow-sm mb-4">
+                    <CardHeader className="flex flex-col space-y-1.5 px-6 py-3 bg-[rgb(59,76,164)] text-white rounded-t-lg mb-4">
+                      <CardTitle className="flex items-center gap-2 text-white text-base">
+                  <Clock3 className="w-5 h-5" />
+                  Schedules
+                      </CardTitle>
+                    </CardHeader>
+              <CardContent className="space-y-6 text-sm text-slate-600">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div className="space-y-2">
+                    <Label>Time zone</Label>
+                    <Select
+                      value={dealData.TimeZone || ''}
+                      onValueChange={(value) => updateDealData('TimeZone', value)}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Select a time zone" /></SelectTrigger>
+                      <SelectContent className="max-h-64">
+                        {timezoneOptions.map((tz) => (
+                          <SelectItem key={tz} value={tz}>{tz}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                        <div className="space-y-2">
+                    <Label>From</Label>
+                          <Input
+                      type="datetime-local"
+                      value={formatDateTimeInput(dealData.StartedAt)}
+                      onChange={(e) => updateDealData('StartedAt', parseDateTimeInput(e.target.value))}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                    <Label>To</Label>
+                          <Input
+                      type="datetime-local"
+                      value={formatDateTimeInput(dealData.FinishedAt)}
+                      onChange={(e) => updateDealData('FinishedAt', parseDateTimeInput(e.target.value))}
+                          />
+                        </div>
+                      </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-slate-200 shadow-sm mb-4">
+              <CardHeader className="flex flex-col space-y-1.5 px-6 py-3 bg-[rgb(59,76,164)] text-white rounded-t-lg mb-4">
+                <CardTitle className="flex items-center gap-2 text-white text-base">
+                  <AppWindow className="w-5 h-5" />
+                  Ad format
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6 text-sm text-slate-600">
+                  <div className="space-y-3">
+                          <div className="flex flex-wrap gap-2">
+                      {adFormatOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className={toggleChipClassName(isAdFormatActive(option.value))}
+                          onClick={() => toggleAdFormat(option.value)}
+                        >
+                          {option.icon}
+                          {option.label}
+                        </button>
+                            ))}
+                          </div>
+                    {adKindsList.length > 0 && !isValidAdKindsCombo(adKindsList) && (
+                      <Alert className="border-amber-200 bg-amber-50 text-amber-950">
+                        <AlertCircle className="h-4 w-4 text-amber-700" />
+                        <AlertDescription>{AD_KIND_MULTI_RULE_MSG}</AlertDescription>
+                      </Alert>
+                    )}
+                        </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-slate-200 shadow-sm mb-4">
+                    <CardHeader className="flex flex-col space-y-1.5 px-6 py-3 bg-[rgb(59,76,164)] text-white rounded-t-lg mb-4">
+                      <CardTitle className="flex items-center gap-2 text-white text-base">
+                  <DollarSign className="w-5 h-5" />
+                  Pricing & priority
+                      </CardTitle>
+                    </CardHeader>
+              <CardContent className="space-y-6 text-sm text-slate-600">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <div className="flex flex-col gap-2">
+                      <Label className="block">Floor price</Label>
+                      <Label className="block">USD CPM</Label>
+                    </div>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="max-w-xs"
+                      value={dealData.Floor != null ? Number((dealData.Floor / 1000).toFixed(2)) : ''}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        if (raw === '') {
+                          updateDealData('Floor', 0);
+                          return;
+                        }
+                        const usd = parseFloat(raw);
+                        if (Number.isNaN(usd)) return;
+                        updateDealData('Floor', Math.max(0, Math.round(usd * 1000)));
+                      }}
+                      placeholder="e.g. 1.30"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Min margin</Label>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      <button
+                        type="button"
+                        className={toggleChipClassName(minMarginIsNone)}
+                        onClick={() => updateDealData('MinMargin', '0')}
+                      >
+                        None
+                      </button>
+                      <button
+                        type="button"
+                        className={toggleChipClassName(!minMarginIsNone)}
+                        onClick={() =>
+                          updateDealData('MinMargin', minMarginIsNone ? '0.02' : dealData.MinMargin)
+                        }
+                      >
+                        Custom
+                      </button>
+                    </div>
+                    {!minMarginIsNone && (
+                      <div className="flex items-center gap-4">
+                        <Slider
+                          value={sliderValue}
+                          max={100}
+                          step={1}
+                          onValueChange={(values) =>
+                            updateDealData('MinMargin', minMarginSliderPercentToStored(values[0]))
+                          }
+                          className="flex-1"
+                        />
+                        <div className="w-12 text-sm font-semibold text-right">{sliderValue[0]}%</div>
+                      </div>
+                    )}
+                    <p className="text-xs text-slate-500">Once a custom margin is set, it overrides the DSP remuneration policy and strategy.</p>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <Label>Bid price</Label>
+                        <div className="flex flex-wrap gap-2">
+                      {auctionTypeOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className={toggleChipClassName(dealData.AuctionType === option.value)}
+                          onClick={() => updateDealData('AuctionType', option.value)}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <Label>Bid priority</Label>
+                    <TooltipProvider delayDuration={250}>
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                          {priorityOptions.map((option) => (
+                            <Tooltip key={option.value}>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  className={toggleChipClassName(
+                                    isPriorityOptionSelected(dealData.PriorityKind, option.value),
+                                  )}
+                                  onClick={() => updateDealData('PriorityKind', option.value)}
+                                >
+                                  {option.label}
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent
+                                side="top"
+                                className="max-w-[min(100vw-2rem,22rem)] bg-slate-900 text-slate-50 border-slate-700 px-3 py-2 text-left text-xs font-normal leading-snug shadow-md"
+                              >
+                                {option.description}
+                              </TooltipContent>
+                            </Tooltip>
+                          ))}
+                        </div>
+                        {isPriorityOptionSelected(dealData.PriorityKind, 'FIRST_LOOK') && (
+                          <p
+                            className="flex gap-1.5 items-start rounded-md border border-amber-200/90 bg-amber-50 px-2 py-1.5 text-[11px] leading-snug text-amber-950"
+                            role="status"
+                          >
+                            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" aria-hidden />
+                            <span>
+                              If every deal uses Highest, none stands out. The effective priority is flat across them.
+                            </span>
+                          </p>
+                        )}
+                      </div>
+                    </TooltipProvider>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                      </div>
+        )}
+
+        {activeSection === 'general-params' && (
+          <div className="space-y-6">
+            <Card className="border-slate-200 shadow-sm">
+              <CardHeader className="flex flex-col space-y-1.5 px-6 py-3 bg-[rgb(59,76,164)] text-white rounded-t-lg mb-4">
+                <CardTitle className="flex items-center gap-2 text-white text-base">
+                  <UserCheck className="w-5 h-5" />
+                  DSP WL
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6 text-sm text-slate-600">
                 <div className="space-y-4">
-                  <Label>DSP partner whitelist</Label>
                   <div className="space-y-2 max-w-2xl">
                     <Label>Search partner</Label>
                     <div className="relative">
@@ -2736,247 +3116,12 @@ const EditDeal = () => {
                     )}
                   </div>
                 </div>
-                      <Separator />
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 flex-wrap">
-                  {isAdFormatActive('AD_BANNER') && (
-                    <div className="flex items-center gap-3">
-                      <Switch
-                        id="banner-story"
-                        checked={!!dealData.BannerStoryDisplay}
-                        onCheckedChange={(checked) => updateDealData('BannerStoryDisplay', checked)}
-                      />
-                      <div>
-                        <Label htmlFor="banner-story">Banner story display</Label>
-                        <p className="text-xs text-slate-500">Story placement for banner inventory.</p>
-                      </div>
-                    </div>
-                  )}
-                  {(isAdFormatActive('AD_STORY') || isAdFormatActive('AD_TRAFFIC')) && (
-                    <div className="flex items-center gap-3">
-                      <Switch
-                        id="native-story"
-                        checked={!!dealData.StoryDisplay}
-                        onCheckedChange={(checked) => updateDealData('StoryDisplay', checked)}
-                      />
-                      <div>
-                        <Label htmlFor="native-story">Native story display</Label>
-                        <p className="text-xs text-slate-500">Applies to story / native display formats.</p>
-                      </div>
-                    </div>
-                  )}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-slate-200 shadow-sm mb-4">
-                    <CardHeader className="flex flex-col space-y-1.5 px-6 py-3 bg-[rgb(59,76,164)] text-white rounded-t-lg mb-4">
-                      <CardTitle className="flex items-center gap-2 text-white text-base">
-                  <Clock3 className="w-5 h-5" />
-                  Schedules
-                      </CardTitle>
-                    </CardHeader>
-              <CardContent className="space-y-6 text-sm text-slate-600">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                        <div className="space-y-2">
-                    <Label>Time zone</Label>
-                    <Select
-                      value={dealData.TimeZone || ''}
-                      onValueChange={(value) => updateDealData('TimeZone', value)}
-                    >
-                      <SelectTrigger><SelectValue placeholder="Select a time zone" /></SelectTrigger>
-                      <SelectContent className="max-h-64">
-                        {timezoneOptions.map((tz) => (
-                          <SelectItem key={tz} value={tz}>{tz}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                        <div className="space-y-2">
-                    <Label>From</Label>
-                          <Input
-                      type="datetime-local"
-                      value={formatDateTimeInput(dealData.StartedAt)}
-                      onChange={(e) => updateDealData('StartedAt', parseDateTimeInput(e.target.value))}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                    <Label>To</Label>
-                          <Input
-                      type="datetime-local"
-                      value={formatDateTimeInput(dealData.FinishedAt)}
-                      onChange={(e) => updateDealData('FinishedAt', parseDateTimeInput(e.target.value))}
-                          />
-                        </div>
-                      </div>
+                <p className="text-xs text-slate-500">
+                  Restricts which DSPs (and optional seats) can buy this deal. Other general settings stay under General info.
+                </p>
               </CardContent>
             </Card>
-
-            <Card className="border-slate-200 shadow-sm mb-4">
-              <CardHeader className="flex flex-col space-y-1.5 px-6 py-3 bg-[rgb(59,76,164)] text-white rounded-t-lg mb-4">
-                <CardTitle className="flex items-center gap-2 text-white text-base">
-                  <AppWindow className="w-5 h-5" />
-                  Ad format
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6 text-sm text-slate-600">
-                  <div className="space-y-3">
-                          <div className="flex flex-wrap gap-2">
-                      {adFormatOptions.map((option) => (
-                        <button
-                          key={option.value}
-                          type="button"
-                          className={toggleChipClassName(isAdFormatActive(option.value))}
-                          onClick={() => toggleAdFormat(option.value)}
-                        >
-                          {option.icon}
-                          {option.label}
-                        </button>
-                            ))}
-                          </div>
-                    {adKindsList.length > 0 && !isValidAdKindsCombo(adKindsList) && (
-                      <Alert className="border-amber-200 bg-amber-50 text-amber-950">
-                        <AlertCircle className="h-4 w-4 text-amber-700" />
-                        <AlertDescription>{AD_KIND_MULTI_RULE_MSG}</AlertDescription>
-                      </Alert>
-                    )}
-                        </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-slate-200 shadow-sm mb-4">
-                    <CardHeader className="flex flex-col space-y-1.5 px-6 py-3 bg-[rgb(59,76,164)] text-white rounded-t-lg mb-4">
-                      <CardTitle className="flex items-center gap-2 text-white text-base">
-                  <DollarSign className="w-5 h-5" />
-                  Pricing & priority
-                      </CardTitle>
-                    </CardHeader>
-              <CardContent className="space-y-6 text-sm text-slate-600">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <div className="flex flex-col gap-2">
-                      <Label className="block">Floor price</Label>
-                      <Label className="block">USD CPM</Label>
-                    </div>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      className="max-w-xs"
-                      value={dealData.Floor != null ? Number((dealData.Floor / 1000).toFixed(2)) : ''}
-                      onChange={(e) => {
-                        const raw = e.target.value;
-                        if (raw === '') {
-                          updateDealData('Floor', 0);
-                          return;
-                        }
-                        const usd = parseFloat(raw);
-                        if (Number.isNaN(usd)) return;
-                        updateDealData('Floor', Math.max(0, Math.round(usd * 1000)));
-                      }}
-                      placeholder="e.g. 1.30"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Min margin</Label>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      <button
-                        type="button"
-                        className={toggleChipClassName(minMarginIsNone)}
-                        onClick={() => updateDealData('MinMargin', '0')}
-                      >
-                        None
-                      </button>
-                      <button
-                        type="button"
-                        className={toggleChipClassName(!minMarginIsNone)}
-                        onClick={() =>
-                          updateDealData('MinMargin', minMarginIsNone ? '0.02' : dealData.MinMargin)
-                        }
-                      >
-                        Custom
-                      </button>
-                    </div>
-                    {!minMarginIsNone && (
-                      <div className="flex items-center gap-4">
-                        <Slider
-                          value={sliderValue}
-                          max={100}
-                          step={1}
-                          onValueChange={(values) =>
-                            updateDealData('MinMargin', minMarginSliderPercentToStored(values[0]))
-                          }
-                          className="flex-1"
-                        />
-                        <div className="w-12 text-sm font-semibold text-right">{sliderValue[0]}%</div>
-                      </div>
-                    )}
-                    <p className="text-xs text-slate-500">Once a custom margin is set, it overrides the DSP remuneration policy and strategy.</p>
-                        </div>
-                      </div>
-
-                      <Separator />
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <Label>Bid price</Label>
-                        <div className="flex flex-wrap gap-2">
-                      {auctionTypeOptions.map((option) => (
-                        <button
-                          key={option.value}
-                          type="button"
-                          className={toggleChipClassName(dealData.AuctionType === option.value)}
-                          onClick={() => updateDealData('AuctionType', option.value)}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <Label>Bid priority</Label>
-                    <TooltipProvider delayDuration={250}>
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap gap-2">
-                          {priorityOptions.map((option) => (
-                            <Tooltip key={option.value}>
-                              <TooltipTrigger asChild>
-                                <button
-                                  type="button"
-                                  className={toggleChipClassName(
-                                    isPriorityOptionSelected(dealData.PriorityKind, option.value),
-                                  )}
-                                  onClick={() => updateDealData('PriorityKind', option.value)}
-                                >
-                                  {option.label}
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent
-                                side="top"
-                                className="max-w-[min(100vw-2rem,22rem)] bg-slate-900 text-slate-50 border-slate-700 px-3 py-2 text-left text-xs font-normal leading-snug shadow-md"
-                              >
-                                {option.description}
-                              </TooltipContent>
-                            </Tooltip>
-                          ))}
-                        </div>
-                        {isPriorityOptionSelected(dealData.PriorityKind, 'FIRST_LOOK') && (
-                          <p
-                            className="flex gap-1.5 items-start rounded-md border border-amber-200/90 bg-amber-50 px-2 py-1.5 text-[11px] leading-snug text-amber-950"
-                            role="status"
-                          >
-                            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" aria-hidden />
-                            <span>
-                              If every deal uses Highest, none stands out. The effective priority is flat across them.
-                            </span>
-                          </p>
-                        )}
-                      </div>
-                    </TooltipProvider>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                      </div>
+          </div>
         )}
 
         {activeSection === 'inventory' && (
@@ -2984,31 +3129,287 @@ const EditDeal = () => {
             <Card className="border-slate-200 shadow-sm">
               <CardHeader className="flex flex-col space-y-1.5 px-6 py-3 bg-[rgb(59,76,164)] text-white rounded-t-lg mb-4">
                 <CardTitle className="flex items-center gap-2 text-white text-base">
-                  <Smartphone className="w-5 h-5" />
-                  Distribution
+                  <Layers className="w-5 h-5" />
+                  Targeting
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6 text-sm text-slate-600">
-                <div className="space-y-2">
-                  <Label>Distribution channel</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {['APP', 'SITE'].map((ch) => (
-                      <button
-                        key={ch}
-                        type="button"
-                        className={toggleChipClassName(
-                          Array.isArray(dealData.DistributionChannelKinds) && dealData.DistributionChannelKinds.includes(ch)
+              <CardContent className="space-y-4 text-sm text-slate-600">
+                <p className="text-xs text-slate-500">
+                  One per line, or comma-separated. Same format for site hostnames, placement codes, and app bundle
+                  IDs below. Empty clears the field (stored as <span className="font-mono">null</span> when
+                  the API allows).
+                </p>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Whitelist site domains</Label>
+                    <Textarea
+                      rows={3}
+                      value={domainsToText(dealData.WhitelistSiteDomains, dealData.WhitelistSiteDomainsMap)}
+                      onChange={(e) => updateWhitelistSiteDomains(e.target.value)}
+                      placeholder="example.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Blacklisted site domains</Label>
+                    <Textarea
+                      rows={3}
+                      value={domainsToText(dealData.BlacklistSiteDomains, dealData.BlacklistSiteDomainsMap)}
+                      onChange={(e) => updateBlacklistSiteDomains(e.target.value)}
+                      placeholder="Add blocked hostnames"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Sites</Label>
+                    <Textarea
+                      rows={3}
+                      value={arrayToLines(dealData.Targeting?.Sites)}
+                      onChange={(e) => patchTargetingNullableList('Sites', e.target.value)}
+                      placeholder="Site UIDs"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Excluded sites</Label>
+                    <Textarea
+                      rows={3}
+                      value={arrayToLines(dealData.Targeting?.ExcludedSites)}
+                      onChange={(e) => patchTargetingNullableList('ExcludedSites', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Publishers</Label>
+                    <Textarea
+                      rows={3}
+                      value={arrayToLines(dealData.Targeting?.Publishers)}
+                      onChange={(e) => patchTargetingNullableList('Publishers', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Excluded publishers</Label>
+                    <Textarea
+                      rows={3}
+                      value={arrayToLines(dealData.Targeting?.ExcludedPublishers)}
+                      onChange={(e) => patchTargetingNullableList('ExcludedPublishers', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Placements</Label>
+                    <Textarea
+                      rows={3}
+                      value={arrayToLines(dealData.Targeting?.Placements)}
+                      onChange={(e) => patchTargetingNullableList('Placements', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Excluded placements</Label>
+                    <Textarea
+                      rows={3}
+                      value={arrayToLines(dealData.Targeting?.ExcludedPlacements)}
+                      onChange={(e) => patchTargetingNullableList('ExcludedPlacements', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Apps (bundle IDs)</Label>
+                    <Textarea
+                      rows={3}
+                      value={arrayToLines(dealData.Targeting?.Apps)}
+                      onChange={(e) => patchTargetingNullableList('Apps', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Excluded app bundle IDs</Label>
+                    <Textarea
+                      rows={3}
+                      value={arrayToLines(dealData.Targeting?.ExcludedAppBundleIds)}
+                      onChange={(e) => patchTargetingNullableList('ExcludedAppBundleIds', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-4 md:col-span-2">
+                    <Label>Realms (ad network)</Label>
+                    <div className="space-y-3">
+                      <Label>Search realms</Label>
+                      <div className="relative max-w-xl">
+                        <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+                        <Input
+                          className="pl-9"
+                          placeholder="Filter by name or UID (empty = all loaded from catalog, max 500)"
+                          value={realmAdSearchQuery}
+                          onChange={(e) => setRealmAdSearchQuery(e.target.value)}
+                        />
+                      </div>
+                      {adNetworkRealmsLoading && (
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Loading…
+                        </div>
+                      )}
+                      {!adNetworkRealmsLoading && adNetworkRealmList.length === 0 && (
+                        <p className="text-xs text-slate-500">No realms in catalog.</p>
+                      )}
+                      {!adNetworkRealmsLoading &&
+                        adNetworkRealmList.length > 0 &&
+                        filteredRealmCatalog.length === 0 && (
+                        <p className="text-xs text-slate-500">No realm matches this filter.</p>
+                      )}
+                      {filteredRealmCatalog.length > 0 && (
+                        <ul className="max-h-52 overflow-y-auto rounded-md border border-slate-200 bg-white">
+                          {filteredRealmCatalog.map((r) => {
+                            const uid = r.Uid;
+                            if (!uid) return null;
+                            return (
+                              <li
+                                key={uid}
+                                className="flex flex-col gap-2 border-b border-slate-100 px-3 py-2 text-xs last:border-0 sm:flex-row sm:items-center sm:justify-between"
+                              >
+                                <span className="min-w-0 text-slate-700">
+                                  <span className="font-medium">{r.Name || '—'}</span>
+                                </span>
+                                <span className="flex shrink-0">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 text-[11px] border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 hover:text-emerald-950"
+                                    onClick={() => addRealmToAdInclusion(uid)}
+                                  >
+                                    Include
+                                  </Button>
+                                </span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Included realms</Label>
+                      <div className="flex min-h-[2rem] flex-wrap gap-2">
+                        {adNetworkUids.length === 0 ? (
+                          <span className="text-xs text-slate-400">None</span>
+                        ) : (
+                          adNetworkUids.map((uid) => {
+                            const label = realmNameByUid[uid] || (Object.keys(realmNameByUid).length ? 'Unknown' : '…');
+                            return (
+                              <Badge
+                                key={`realm-inc-${uid}`}
+                                variant="outline"
+                                className="cursor-pointer border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100"
+                                onClick={() => removeRealmAdInclusion(uid)}
+                                title="Remove"
+                              >
+                                {label} ×
+                              </Badge>
+                            );
+                          })
                         )}
-                        onClick={() => toggleDistributionChannel(ch)}
-                      >
-                        {ch}
-                      </button>
-                    ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-4 border-t border-slate-200 pt-6 md:col-span-2">
+                    <Label>Broker partners</Label>
+                    <div className="space-y-3">
+                      <Label>Search broker</Label>
+                      <div className="relative max-w-xl">
+                        <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+                        <Input
+                          className="pl-9"
+                          placeholder="Filter by name or UID (empty = all loaded from catalog, max 500)"
+                          value={brokerSearchQuery}
+                          onChange={(e) => setBrokerSearchQuery(e.target.value)}
+                        />
+                      </div>
+                      {brokerCatalogLoading && (
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Loading…
+                        </div>
+                      )}
+                      {!brokerCatalogLoading && brokerCatalogList.length === 0 && (
+                        <p className="text-xs text-slate-500">No brokers in catalog.</p>
+                      )}
+                      {!brokerCatalogLoading &&
+                        brokerCatalogList.length > 0 &&
+                        filteredBrokerCatalog.length === 0 && (
+                          <p className="text-xs text-slate-500">No broker matches this filter.</p>
+                        )}
+                      {filteredBrokerCatalog.length > 0 && (
+                        <ul className="max-h-52 overflow-y-auto rounded-md border border-slate-200 bg-white">
+                          {filteredBrokerCatalog.map((b) => {
+                            const uid = b.uid;
+                            if (!uid) return null;
+                            return (
+                              <li
+                                key={uid}
+                                className="flex flex-col gap-2 border-b border-slate-100 px-3 py-2 text-xs last:border-0 sm:flex-row sm:items-center sm:justify-between"
+                              >
+                                <span className="min-w-0 text-slate-700" title={`UID: ${uid}`}>
+                                  <span className="font-medium">{b.name || '—'}</span>
+                                </span>
+                                <span className="flex shrink-0">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 text-[11px] border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 hover:text-emerald-950"
+                                    onClick={() => addBrokerInclusion(uid, b.name)}
+                                  >
+                                    Include
+                                  </Button>
+                                </span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Included broker partners</Label>
+                      <div className="flex min-h-[2rem] flex-wrap gap-2">
+                        {(!(dealData.Targeting?.BrokerPartners || []).length) ? (
+                          <span className="text-xs text-slate-400">None</span>
+                        ) : (
+                          (dealData.Targeting?.BrokerPartners || []).map((id) => {
+                            const sid = String(id);
+                            const label =
+                              brokerNameByUid[sid] && brokerNameByUid[sid] !== sid
+                                ? brokerNameByUid[sid]
+                                : Object.keys(brokerNameByUid).length
+                                  ? 'Unknown'
+                                  : '…';
+                            return (
+                              <Badge
+                                key={`broker-inc-${sid}`}
+                                variant="outline"
+                                className="cursor-pointer border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100"
+                                onClick={() => removeBrokerPartner(id)}
+                                title="Remove"
+                              >
+                                {label} ×
+                              </Badge>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>IAB categories</Label>
+                    <Textarea
+                      rows={2}
+                      value={arrayToLines(dealData.Targeting?.IABCategories)}
+                      onChange={(e) => patchTargetingNullableList('IABCategories', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Excluded IAB categories</Label>
+                    <Textarea
+                      rows={2}
+                      value={arrayToLines(dealData.Targeting?.ExcludedIABCategories)}
+                      onChange={(e) => patchTargetingNullableList('ExcludedIABCategories', e.target.value)}
+                    />
                   </div>
                 </div>
               </CardContent>
             </Card>
-
             <Card className="border-slate-200 shadow-sm">
               <CardHeader className="flex flex-col space-y-1.5 px-6 py-3 bg-[rgb(59,76,164)] text-white rounded-t-lg mb-4">
                 <CardTitle className="flex items-center gap-2 text-white text-base">
@@ -3017,98 +3418,6 @@ const EditDeal = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6 text-sm text-slate-600">
-                <div className="space-y-4 max-w-2xl">
-                  <Label>Broker partners</Label>
-                  <div className="space-y-2">
-                    <Label>Search broker</Label>
-                    <div className="relative">
-                      <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
-                      <Input
-                        className="pl-9"
-                        placeholder="Filter by name or UID"
-                        value={brokerSearchQuery}
-                        onChange={(e) => {
-                          setBrokerSearchQuery(e.target.value);
-                          setBrokerSearchOpen(true);
-                        }}
-                        onFocus={() => setBrokerSearchOpen(true)}
-                      />
-                    </div>
-                    {brokerSearchLoading && (
-                      <div className="flex items-center gap-2 text-xs text-slate-500">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        Loading brokers…
-                      </div>
-                    )}
-                    {brokerSearchError && <p className="text-xs text-red-600">{brokerSearchError}</p>}
-                    {brokerSearchOpen && brokerSearchResults.length > 0 && (
-                      <ul className="max-h-44 overflow-y-auto rounded-md border border-slate-200 bg-white shadow-sm">
-                        {brokerSearchResults.map((b) => {
-                          const already = (dealData.Targeting?.BrokerPartners || []).some(
-                            (x) => String(x) === String(b.uid),
-                          );
-                          return (
-                            <li
-                              key={b.uid}
-                              className="flex flex-col gap-2 border-b border-slate-100 px-3 py-2 text-xs last:border-0 sm:flex-row sm:items-center sm:justify-between"
-                            >
-                              <span className="min-w-0 text-slate-700" title={`UID: ${b.uid}`}>
-                                <span className="font-medium">{b.name}</span>
-                              </span>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="secondary"
-                                disabled={already || addingBrokerUid === b.uid}
-                                className="h-8 shrink-0 text-[11px]"
-                                onClick={() => addBrokerFromSearch(b.uid, b.name)}
-                              >
-                                {addingBrokerUid === b.uid ? (
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                ) : already ? (
-                                  'Added'
-                                ) : (
-                                  'Add'
-                                )}
-                              </Button>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Selected brokers</Label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {(!(dealData.Targeting?.BrokerPartners || []).length) ? (
-                        <span className="text-xs text-slate-400">None — use search above.</span>
-                      ) : (
-                        (dealData.Targeting?.BrokerPartners || []).map((id) => (
-                          <span
-                            key={id}
-                            className="inline-flex max-w-full items-center gap-1 rounded-md border border-slate-200 bg-slate-50 py-0.5 pl-2 pr-1 text-xs"
-                            title={`Broker uid: ${id}`}
-                          >
-                            <span className="font-medium text-slate-800">
-                              {brokerNameByUid[id] && brokerNameByUid[id] !== String(id)
-                                ? brokerNameByUid[id]
-                                : 'Broker'}
-                            </span>
-                            <button
-                              type="button"
-                              className="rounded p-0.5 text-slate-500 hover:bg-slate-200 hover:text-slate-800"
-                              onClick={() => removeBrokerPartner(id)}
-                              aria-label="Remove broker"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </span>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <Separator />
                 <div className="space-y-2">
                   <Label>Device</Label>
                   <div className="flex flex-wrap gap-2">
@@ -3371,135 +3680,6 @@ const EditDeal = () => {
                         ))
                       )}
                     </div>
-                  </div>
-                </div>
-
-                <Separator />
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Whitelist site domains (one per line)</Label>
-                    <p className="text-xs text-slate-500">Syncs <span className="font-mono">WhitelistSiteDomainsMap</span> (values null).</p>
-                    <Textarea
-                      rows={5}
-                      value={domainsToText(dealData.WhitelistSiteDomains, dealData.WhitelistSiteDomainsMap)}
-                      onChange={(e) => updateWhitelistSiteDomains(e.target.value)}
-                      placeholder="example.com"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Blocked / blacklisted domains (one per line)</Label>
-                    <p className="text-xs text-slate-500">Syncs <span className="font-mono">BlacklistSiteDomainsMap</span>.</p>
-                    <Textarea
-                      rows={5}
-                      value={domainsToText(dealData.BlacklistSiteDomains, dealData.BlacklistSiteDomainsMap)}
-                      onChange={(e) => updateBlacklistSiteDomains(e.target.value)}
-                      placeholder="Add blocked domains"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-slate-200 shadow-sm">
-              <CardHeader className="flex flex-col space-y-1.5 px-6 py-3 bg-[rgb(59,76,164)] text-white rounded-t-lg mb-4">
-                <CardTitle className="flex items-center gap-2 text-white text-base">
-                  <Layers className="w-5 h-5" />
-                  Targeting — publishers, sites &amp; IAB
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 text-sm text-slate-600">
-                <p className="text-xs text-slate-500">
-                  One UID or code per line (or comma-separated). Empty clears the field (stored as{' '}
-                  <span className="font-mono">null</span> when supported by the API).
-                </p>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Sites</Label>
-                    <Textarea
-                      rows={3}
-                      value={arrayToLines(dealData.Targeting?.Sites)}
-                      onChange={(e) => patchTargetingNullableList('Sites', e.target.value)}
-                      placeholder="Site UIDs"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Excluded sites</Label>
-                    <Textarea
-                      rows={3}
-                      value={arrayToLines(dealData.Targeting?.ExcludedSites)}
-                      onChange={(e) => patchTargetingNullableList('ExcludedSites', e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Publishers</Label>
-                    <Textarea
-                      rows={3}
-                      value={arrayToLines(dealData.Targeting?.Publishers)}
-                      onChange={(e) => patchTargetingNullableList('Publishers', e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Excluded publishers</Label>
-                    <Textarea
-                      rows={3}
-                      value={arrayToLines(dealData.Targeting?.ExcludedPublishers)}
-                      onChange={(e) => patchTargetingNullableList('ExcludedPublishers', e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Placements</Label>
-                    <Textarea
-                      rows={3}
-                      value={arrayToLines(dealData.Targeting?.Placements)}
-                      onChange={(e) => patchTargetingNullableList('Placements', e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Excluded placements</Label>
-                    <Textarea
-                      rows={3}
-                      value={arrayToLines(dealData.Targeting?.ExcludedPlacements)}
-                      onChange={(e) => patchTargetingNullableList('ExcludedPlacements', e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Apps (bundle IDs)</Label>
-                    <Textarea
-                      rows={3}
-                      value={arrayToLines(dealData.Targeting?.Apps)}
-                      onChange={(e) => patchTargetingNullableList('Apps', e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Ad network</Label>
-                    <Input
-                      className="font-mono text-xs"
-                      value={dealData.Targeting?.AdNetwork != null ? String(dealData.Targeting.AdNetwork) : ''}
-                      onChange={(e) => {
-                        const v = e.target.value.trim();
-                        mergeTargeting((t) => ({
-                          ...t,
-                          AdNetwork: v === '' ? null : v,
-                        }));
-                      }}
-                      placeholder="null or ID"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>IAB categories</Label>
-                    <Textarea
-                      rows={2}
-                      value={arrayToLines(dealData.Targeting?.IABCategories)}
-                      onChange={(e) => patchTargetingNullableList('IABCategories', e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Excluded IAB categories</Label>
-                    <Textarea
-                      rows={2}
-                      value={arrayToLines(dealData.Targeting?.ExcludedIABCategories)}
-                      onChange={(e) => patchTargetingNullableList('ExcludedIABCategories', e.target.value)}
-                    />
                   </div>
                 </div>
               </CardContent>
@@ -3821,7 +4001,7 @@ const EditDeal = () => {
               <CardHeader className="flex flex-col space-y-1.5 px-6 py-3 bg-[rgb(59,76,164)] text-white rounded-t-lg mb-4">
                 <CardTitle className="flex items-center gap-2 text-white text-base">
                   <Globe2 className="w-5 h-5" />
-                  App bundles &amp; JavaScript
+                  JavaScript
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6 text-sm text-slate-600">
@@ -3838,34 +4018,6 @@ const EditDeal = () => {
                       }))
                     }
                   />
-                </div>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Blacklist app bundles</Label>
-                    <Textarea
-                      rows={3}
-                      value={arrayToLines(dealData.BlacklistAppBundles)}
-                      onChange={(e) =>
-                        setDealData((prev) => ({
-                          ...prev,
-                          BlacklistAppBundles: linesToNullableArray(e.target.value),
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Whitelist app bundles</Label>
-                    <Textarea
-                      rows={3}
-                      value={arrayToLines(dealData.WhitelistAppBundles)}
-                      onChange={(e) =>
-                        setDealData((prev) => ({
-                          ...prev,
-                          WhitelistAppBundles: linesToNullableArray(e.target.value),
-                        }))
-                      }
-                    />
-                  </div>
                 </div>
               </CardContent>
             </Card>
