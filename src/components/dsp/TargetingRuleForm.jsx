@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toggleChipClassName } from "@/lib/toggleChip";
 import { Switch } from "@/components/ui/switch";
-import { Plus, X, Globe, AppWindow, Monitor, Smartphone, Tablet, LayoutTemplate, FileCode, Info, Loader2 } from "lucide-react";
+import { Plus, X, Globe, AppWindow, Monitor, Smartphone, Tablet, Tv, LayoutTemplate, FileCode, Info, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 // ----------------------------
@@ -23,13 +23,14 @@ const kindOptions = [
 ];
 
 // All possible target devices
-const ALL_DEVICES = ["DESKTOP", "TABLET", "MOBILE"];
+const ALL_DEVICES = ["DESKTOP", "MOBILE", "TABLET", "TV"];
 
 // Mapping of device types to icons
 const deviceIcons = {
     "DESKTOP": <Monitor className="w-3.5 h-3.5 mr-1.5" />,
+    "MOBILE": <Smartphone className="w-3.5 h-3.5 mr-1.5" />,
     "TABLET": <Tablet className="w-3.5 h-3.5 mr-1.5" />,
-    "MOBILE": <Smartphone className="w-3.5 h-3.5 mr-1.5" />
+    "TV": <Tv className="w-3.5 h-3.5 mr-1.5" />
 };
 
 /**
@@ -49,7 +50,7 @@ export default function TargetingRuleForm({ onAdd, onCancel, loading, availableC
         enableSite: false,       // Whether "Site traffic" is enabled
         enableApp: false,        // Whether "App traffic" is enabled
         countries: "",           // Comma-separated ISO3 country codes
-        devices: ["DESKTOP", "TABLET", "MOBILE"], // Default to all devices enabled
+        devices: ["DESKTOP", "MOBILE", "TABLET", "TV"], // Default to all devices enabled
         userSyncedOnly: false,   // Restrict to only synced users
         dealsOnly: false,        // Restrict to deals-only traffic
         connectorContent: "NATIVE_1_1" // Default Native version

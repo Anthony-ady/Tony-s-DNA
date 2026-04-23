@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Edit3, Check, X, Zap, Hash, Tag, Power, Loader2, Globe, Network, Bug, Gauge, ShieldCheck, Target, MapPin, Monitor, Smartphone, Tablet, AppWindow, Plus, FileCode, Trash2, Link2, Package, PlusCircle, MinusCircle, Code, FileJson, Settings, AlertCircle, List, UserX, UserCheck, Type, ToggleLeft, ToggleRight, Info, HardDrive, Cpu, CircleDollarSign, ScanLine, Maximize, Route, SlidersHorizontal, GitBranch, Scan, Shield, LayoutTemplate } from 'lucide-react';
+import { Edit3, Check, X, Zap, Hash, Tag, Power, Loader2, Globe, Network, Bug, Gauge, ShieldCheck, Target, MapPin, Monitor, Smartphone, Tablet, Tv, AppWindow, Plus, FileCode, Trash2, Link2, Package, PlusCircle, MinusCircle, Code, FileJson, Settings, AlertCircle, List, UserX, UserCheck, Type, ToggleLeft, ToggleRight, Info, HardDrive, Cpu, CircleDollarSign, ScanLine, Maximize, Route, SlidersHorizontal, GitBranch, Scan, Shield, LayoutTemplate } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { Separator } from "@/components/ui/separator";
@@ -37,12 +37,13 @@ const kindMapping = {
     "AD_BANNER": "Banner"
 };
 
-const ALL_DEVICES = ["DESKTOP", "TABLET", "MOBILE"];
+const ALL_DEVICES = ["DESKTOP", "MOBILE", "TABLET", "TV"];
 
 const deviceIcons = {
     "DESKTOP": <Monitor className="w-3.5 h-3.5 mr-1.5" />,
+    "MOBILE": <Smartphone className="w-3.5 h-3.5 mr-1.5" />,
     "TABLET": <Tablet className="w-3.5 h-3.5 mr-1.5" />,
-    "MOBILE": <Smartphone className="w-3.5 h-3.5 mr-1.5" />
+    "TV": <Tv className="w-3.5 h-3.5 mr-1.5" />
 };
 
 // --- Helper Components ---

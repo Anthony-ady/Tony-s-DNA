@@ -43,7 +43,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-const DEVICE_OPTIONS = ['DESKTOP', 'MOBILE', 'TABLET'];
+const DEVICE_OPTIONS = ['DESKTOP', 'MOBILE', 'TABLET', 'TV'];
 const BROWSER_OPTIONS = [
   'CHROME',
   'FIREFOX',

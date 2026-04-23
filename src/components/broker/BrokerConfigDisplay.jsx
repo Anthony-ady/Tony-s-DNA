@@ -25,7 +25,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   Edit3, Save, X, FileJson, Hash, Network, Tag, Globe, DollarSign, Settings, Loader2, 
-  Monitor, Smartphone, Tablet, Plus, Trash2, AlertTriangle, ArrowRightLeft, MapPin, PlusCircle, MinusCircle, Link2,
+  Monitor, Smartphone, Tablet, Tv, Plus, Trash2, AlertTriangle, ArrowRightLeft, MapPin, PlusCircle, MinusCircle, Link2,
   Type, FileText, Target,
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -59,7 +59,17 @@ const ALL_AD_KINDS = {
  * Available device types for targeting configuration
  * These are the device categories that can be targeted in ad campaigns
  */
-const ALL_DEVICES = ["DESKTOP", "MOBILE", "TABLET"];
+const ALL_DEVICES = ["DESKTOP", "MOBILE", "TABLET", "TV"];
+
+const getDeviceIcon = (device) => {
+  switch (device) {
+    case 'DESKTOP': return <Monitor className="w-4 h-4 shrink-0" />;
+    case 'MOBILE': return <Smartphone className="w-4 h-4 shrink-0" />;
+    case 'TABLET': return <Tablet className="w-4 h-4 shrink-0" />;
+    case 'TV': return <Tv className="w-4 h-4 shrink-0" />;
+    default: return <Monitor className="w-4 h-4 shrink-0" />;
+  }
+};
 
 /**
  * TargetingList Component
@@ -738,10 +748,13 @@ export default function BrokerConfigDisplay({ data, onUpdateName, onUpdateSeller
                                             disabled={isSavingTargeting}
                                             className={toggleChipClassName(
                                               isActive,
-                                              isSavingTargeting ? 'opacity-50 cursor-not-allowed' : ''
+                                              `flex items-center ${isSavingTargeting ? 'opacity-50 cursor-not-allowed' : ''}`.trim()
                                             )}
                                         >
-                                            {device}
+                                            <span className="flex items-center gap-1.5">
+                                                {getDeviceIcon(device)}
+                                                {device}
+                                            </span>
                                         </button>
                                     )
                                 })}

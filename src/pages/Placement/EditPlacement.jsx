@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import { Badge } from '../../components/ui/badge';
 import { Separator } from '../../components/ui/separator';
 import { Alert, AlertDescription } from '../../components/ui/alert';
-import { ArrowLeft, Building2, Settings, Loader2, Save, X, AlertCircle, Target, Shield, Monitor, Smartphone, Tablet, DollarSign, Palette, Check, ChevronsUpDown, ClipboardCopy, ChevronRight, Plus } from 'lucide-react';
+import { ArrowLeft, Building2, Settings, Loader2, Save, X, AlertCircle, Target, Shield, Monitor, Smartphone, Tablet, Tv, DollarSign, Palette, Check, ChevronsUpDown, ClipboardCopy, ChevronRight, Plus } from 'lucide-react';
 import { authService } from '../../services/authService';
 import ToggleSwitch from '../../components/ui/toggle-switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
@@ -464,6 +464,7 @@ const EditPlacement = () => {
       case 'DESKTOP': return <Monitor className="w-4 h-4" />;
       case 'MOBILE': return <Smartphone className="w-4 h-4" />;
       case 'TABLET': return <Tablet className="w-4 h-4" />;
+      case 'TV': return <Tv className="w-4 h-4" />;
       default: return <Monitor className="w-4 h-4" />;
     }
   };
@@ -1669,7 +1670,7 @@ const EditPlacement = () => {
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold text-slate-900">Enabled Devices</h3>
                     <div className="flex flex-wrap gap-2">
-                      {['DESKTOP', 'MOBILE', 'TABLET'].map((device) => {
+                      {['DESKTOP', 'MOBILE', 'TABLET', 'TV'].map((device) => {
                         const isEnabled = placementData.EnabledDevices?.includes(device) || false;
                         return (
                           <button

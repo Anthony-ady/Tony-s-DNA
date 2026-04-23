@@ -898,7 +898,7 @@ export default function EditDSP() {
           traffic_type: newRuleData.traffic_type,
           config: {
             CountriesInclusion: newRuleData.countries || [],
-            Devices: newRuleData.devices || ["DESKTOP", "TABLET", "MOBILE"],
+            Devices: newRuleData.devices || ["DESKTOP", "MOBILE", "TABLET", "TV"],
             UserSyncedOnly: newRuleData.userSyncedOnly || false,
             DealsOnly: newRuleData.dealsOnly || false
           }
