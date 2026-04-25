@@ -152,11 +152,13 @@ export default function DealDashboard() {
       const networkOpsEndDate = new Date(endDateValue) >= todayStart ? yesterdayEnd : new Date(endDateValue);
       const networkOpsBeginDate = new Date(beginDate) >= todayStart ? yesterdayStart : new Date(beginDate);
 
-      const filters = {};
-      const selectedRealmId = getSelectedRealmId();
-      if (selectedRealmId) {
-        filters.realmId = {
-          "Value": [selectedRealmId],
+      // Liste des deals du dashboard : filtrer par realm sélectionné (header).
+      // Les séries / détail d’un deal précis utilisent fetchDailyDataForRealm (DealId seul, sans realm).
+      const listFilters = {};
+      const selectedRealmIdForList = getSelectedRealmId();
+      if (selectedRealmIdForList) {
+        listFilters.realmId = {
+          "Value": [selectedRealmIdForList],
           "Operator": "in"
         };
       }
@@ -172,7 +174,7 @@ export default function DealDashboard() {
         "TimeZone": "Etc/GMT",
         "Granularity": "all",
         "Intervals": [{ "Begin": networkOpsBeginDate.toISOString(), "End": networkOpsEndDate.toISOString() }],
-        "Filters": Object.keys(filters).length ? filters : undefined,
+        "Filters": Object.keys(listFilters).length ? listFilters : undefined,
         "OrderBy": "network_operations_price_publisher",
         "OrderOp": "DESC",
         "Size": 1500,
@@ -296,17 +298,11 @@ export default function DealDashboard() {
         const networkOpsEndDate = new Date(endDateFormatted) >= todayStart ? yesterdayEnd : new Date(endDateFormatted);
         const networkOpsBeginDate = new Date(beginDate) >= todayStart ? yesterdayStart : new Date(beginDate);
 
-        const dailyFilters = {};
-        const selectedRealmId = getSelectedRealmId();
-        if (selectedRealmId) {
-          dailyFilters.realmId = {
-            "Value": [selectedRealmId],
+        const dailyFilters = {
+          DealId: {
+            "Value": [dealId],
             "Operator": "in"
-          };
-        }
-        dailyFilters.DealId = {
-          "Value": [dealId],
-          "Operator": "in"
+          }
         };
 
         payload = {

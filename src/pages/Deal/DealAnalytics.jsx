@@ -43,17 +43,6 @@ export default function DealAnalytics() {
     derived: ["rpbr", "fillRate", "winRate"],
     filtersBuilder: ({ entityId }) => {
       const filters = {};
-      const selectedRealmId = typeof window !== 'undefined'
-        ? localStorage.getItem('selected-realm-id') || ''
-        : '';
-
-      if (selectedRealmId) {
-        filters.realmId = {
-          Value: [selectedRealmId],
-          Operator: "in",
-        };
-      }
-
       if (entityId) {
         filters.DealId = {
           Value: [entityId],
@@ -141,8 +130,76 @@ export default function DealAnalytics() {
           yesterdayData.forEach(item => {
             yesterdayMap[item.hour] = item;
           });
-          
-      todayData.forEach(todayItem => {
+
+          const todayMap = {};
+          todayData.forEach((item) => {
+            todayMap[item.hour] = item;
+          });
+
+          // Union of UTC hours: for missing "today" slots, project from yesterday * trend ratio (comparable hours)
+          const hoursSet = new Set();
+          todayData.forEach((i) => hoursSet.add(i.hour));
+          yesterdayData.forEach((i) => hoursSet.add(i.hour));
+          const hoursToShow = Array.from(hoursSet).sort((a, b) => a - b);
+
+          // Trend on comparable hours: ratio today/hier = (1 + %). Applied heure par heure to missing "today" slots
+          let sumTodayDspForTrend = 0;
+          let sumYesterdayDspForTrend = 0;
+          todayData.forEach((tItem) => {
+            const yItem = yesterdayMap[tItem.hour];
+            if (yItem) {
+              sumTodayDspForTrend += tItem.PriceAdvertiser_PublisherSide || 0;
+              sumYesterdayDspForTrend += yItem.PriceAdvertiser_PublisherSide || 0;
+            }
+          });
+          const trendRatio = sumYesterdayDspForTrend > 0
+            ? sumTodayDspForTrend / sumYesterdayDspForTrend
+            : 1;
+
+          const makeEmptyTodayItem = (hour) => {
+            const t = new Date();
+            const cleanDate = new Date(
+              Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate(), hour, 0, 0, 0)
+            );
+            return {
+              timestamp: cleanDate.toISOString(),
+              PricePublisher: 0,
+              PriceAdvertiser_PublisherSide: 0,
+              CLICK: 0,
+              IMPRESSION: 0,
+              cleanDate,
+              hour,
+              isProjected: true
+            };
+          };
+
+          const buildProjectedTodayItem = (hour, yItem) => {
+            const t = new Date();
+            const cleanDate = new Date(
+              Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate(), hour, 0, 0, 0)
+            );
+            if (!yItem) {
+              return makeEmptyTodayItem(hour);
+            }
+            const s = (v) => (v || 0) * trendRatio;
+            const pricePub = s(yItem.PricePublisher);
+            const priceDsp = s(yItem.PriceAdvertiser_PublisherSide);
+            const cl = Math.round(s(yItem.CLICK ?? yItem.Click ?? 0));
+            const im = Math.round(s(yItem.IMPRESSION ?? yItem.Impression ?? 0));
+            return {
+              timestamp: cleanDate.toISOString(),
+              PricePublisher: pricePub,
+              PriceAdvertiser_PublisherSide: priceDsp,
+              CLICK: cl,
+              IMPRESSION: im,
+              cleanDate,
+              hour,
+              isProjected: true
+            };
+          };
+
+      hoursToShow.forEach((hour) => {
+            const todayItem = todayMap[hour] ?? buildProjectedTodayItem(hour, yesterdayMap[hour]);
             const yesterdayItem = yesterdayMap[todayItem.hour];
             
         const todayClicks = todayItem.CLICK ?? todayItem.Click ?? 0;
@@ -200,8 +257,17 @@ export default function DealAnalytics() {
           ? (((todayMargin - yesterdayMargin) / Math.abs(yesterdayMargin)) * 100).toFixed(1)
           : 0;
 
+        const isProjected = !todayMap[hour];
+        const dateBase = `${todayItem.cleanDate.toLocaleDateString('fr-FR', { timeZone: 'UTC' })} ${todayItem.cleanDate.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: true,
+                timeZone: 'UTC'
+              })}`;
+
         processedData.push({
               ...todayItem,
+              isProjected,
               click: todayClicks,
               impression: todayImpressions,
               ctr: todayCtr,
@@ -220,12 +286,7 @@ export default function DealAnalytics() {
               publisherCostsChangePercent,
               marginTrend,
               marginChangePercent,
-              formattedDate: `${todayItem.cleanDate.toLocaleDateString('fr-FR', { timeZone: 'UTC' })} ${todayItem.cleanDate.toLocaleTimeString('en-US', { 
-                hour: '2-digit', 
-                minute: '2-digit',
-                hour12: true,
-                timeZone: 'UTC'
-              })}`,
+              formattedDate: isProjected ? `${dateBase} (estim.)` : dateBase,
               hourOnly: todayItem.cleanDate.toLocaleTimeString('en-US', { 
                 hour: '2-digit', 
                 minute: '2-digit',
@@ -558,18 +619,40 @@ export default function DealAnalytics() {
       return null;
     }
 
-    const totalPublisher = data.reduce((sum, item) => sum + (item.PricePublisher || 0), 0);
-    const totalDSP = data.reduce((sum, item) => sum + (item.PriceAdvertiser_PublisherSide || 0), 0);
-    const totalMargin = totalDSP - totalPublisher;
-    const marginPercentage = totalDSP > 0 ? (totalMargin / totalDSP) * 100 : 0;
-
-    return {
-      totalPublisher,
-      totalDSP,
-      totalMargin,
-      marginPercentage,
-      dataPoints: data.length
+    const sumRows = (rows) => {
+      if (!rows.length) {
+        return {
+          totalPublisher: 0,
+          totalDSP: 0,
+          totalMargin: 0,
+          marginPercentage: 0,
+          dataPoints: 0
+        };
+      }
+      const totalPublisher = rows.reduce((sum, item) => sum + (item.PricePublisher || 0), 0);
+      const totalDSP = rows.reduce((sum, item) => sum + (item.PriceAdvertiser_PublisherSide || 0), 0);
+      const totalMargin = totalDSP - totalPublisher;
+      const marginPercentage = totalDSP > 0 ? (totalMargin / totalDSP) * 100 : 0;
+      return {
+        totalPublisher,
+        totalDSP,
+        totalMargin,
+        marginPercentage,
+        dataPoints: rows.length
+      };
     };
+
+    if (viewMode === 'hourly') {
+      const realRows = data.filter((item) => !item.isProjected);
+      const hasProjected = data.some((item) => item.isProjected);
+      const realStats = sumRows(realRows);
+      if (hasProjected) {
+        return { ...realStats, estimated: sumRows(data) };
+      }
+      return realStats;
+    }
+
+    return sumRows(data);
   };
 
   // Fetch hourly data for a specific date
@@ -765,79 +848,181 @@ export default function DealAnalytics() {
 
   // Render summary cards
   const renderSummaryCards = (summaryStats, viewMode, formatCurrencyFn) => {
-  return (
+    const real = summaryStats;
+    const est = summaryStats?.estimated;
+    const showEstimated = viewMode === 'hourly' && est && typeof est.totalDSP === 'number';
+
+    const realTimeCards = (
       <>
-            <Card className="border-slate-200 shadow-sm">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className={TAILWIND_CLASSES.formSectionLabel}>DSP Revenue</p>
-                <p className="text-lg lg:text-xl font-bold text-green-600">{formatCurrencyFn(summaryStats.totalDSP)}</p>
-                  </div>
+        <Card className="border-slate-200 shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={TAILWIND_CLASSES.formSectionLabel}>DSP Revenue</p>
+                <p className="text-lg lg:text-xl font-bold text-green-600">{formatCurrencyFn(real.totalDSP)}</p>
+              </div>
               <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
                 <DollarSign className="w-4 h-4 text-white" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-            <Card className="border-slate-200 shadow-sm">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className={TAILWIND_CLASSES.formSectionLabel}>Publisher Costs</p>
-                <p className="text-lg lg:text-xl font-bold text-red-600">{formatCurrencyFn(summaryStats.totalPublisher)}</p>
-                  </div>
+        <Card className="border-slate-200 shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={TAILWIND_CLASSES.formSectionLabel}>Publisher Costs</p>
+                <p className="text-lg lg:text-xl font-bold text-red-600">{formatCurrencyFn(real.totalPublisher)}</p>
+              </div>
               <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center">
                 <TrendingUp className="w-4 h-4 text-white" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-            <Card className="border-slate-200 shadow-sm">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className={TAILWIND_CLASSES.formSectionLabel}>Margin</p>
-                <p className="text-lg lg:text-xl font-bold" style={{ color: 'rgb(79, 70, 229)' }}>{formatCurrencyFn(summaryStats.totalMargin)}</p>
-                  </div>
+        <Card className="border-slate-200 shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={TAILWIND_CLASSES.formSectionLabel}>Margin</p>
+                <p className="text-lg lg:text-xl font-bold" style={{ color: 'rgb(79, 70, 229)' }}>{formatCurrencyFn(real.totalMargin)}</p>
+              </div>
               <div className="w-8 h-8 bg-gradient-to-br from-[rgb(75,99,226)] to-purple-600 rounded-lg flex items-center justify-center">
                 <BarChart3 className="w-4 h-4 text-white" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-            <Card className="border-slate-200 shadow-sm">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className={TAILWIND_CLASSES.formSectionLabel}>Avg Margin %</p>
-                <p className="text-lg lg:text-xl font-bold text-orange-600">{summaryStats.marginPercentage.toFixed(1)}%</p>
-                  </div>
+        <Card className="border-slate-200 shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={TAILWIND_CLASSES.formSectionLabel}>Avg Margin %</p>
+                <p className="text-lg lg:text-xl font-bold text-orange-600">{Number(real.marginPercentage ?? 0).toFixed(1)}%</p>
+              </div>
               <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
                 <Calendar className="w-4 h-4 text-white" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </>
+    );
+
+    if (!showEstimated) {
+      return realTimeCards;
+    }
+
+    const realTimeGrid = (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {realTimeCards}
+      </div>
+    );
+
+    const estimGrid = (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="border-blue-200 bg-blue-50/60 shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={TAILWIND_CLASSES.formSectionLabel}>DSP Revenue</p>
+                <p className="text-lg lg:text-xl font-bold text-blue-600">{formatCurrencyFn(est.totalDSP)}</p>
+              </div>
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-blue-200 bg-blue-50/60 shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={TAILWIND_CLASSES.formSectionLabel}>Publisher Costs</p>
+                <p className="text-lg lg:text-xl font-bold text-blue-600">{formatCurrencyFn(est.totalPublisher)}</p>
+              </div>
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-blue-200 bg-blue-50/60 shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={TAILWIND_CLASSES.formSectionLabel}>Margin</p>
+                <p className="text-lg lg:text-xl font-bold text-blue-600">{formatCurrencyFn(est.totalMargin)}</p>
+              </div>
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center">
+                <BarChart3 className="w-4 h-4 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-blue-200 bg-blue-50/60 shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={TAILWIND_CLASSES.formSectionLabel}>Avg Margin %</p>
+                <p className="text-lg lg:text-xl font-bold text-blue-600">{Number(est.marginPercentage ?? 0).toFixed(1)}%</p>
+              </div>
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center">
+                <Calendar className="w-4 h-4 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+
+    return (
+      <div className="col-span-full w-full max-w-full space-y-6">
+        <div>
+          <p className="text-sm font-medium text-slate-600 mb-2">Real time (received data only)</p>
+          {realTimeGrid}
+        </div>
+        <div>
+          <p className="text-sm font-medium text-blue-700 mb-2">Estimated (full day, including hourly projections)</p>
+          {estimGrid}
+        </div>
+      </div>
     );
   };
 
   // Prepare chart data for hourly view
   const prepareHourlyChartData = (data) => {
-    return data.map((item) => {
+    if (!data?.length) return [];
+    const mapped = data.map((item) => {
       const hourOnly = item.hourOnly || 'N/A';
       const yesterdayDspRevenue = item.yesterdayData ? item.yesterdayData.PriceAdvertiser_PublisherSide || 0 : 0;
-      
+      const dsp = item.PriceAdvertiser_PublisherSide || 0;
       return {
         ...item,
         hourOnly,
-        yesterdayDspRevenue
+        yesterdayDspRevenue,
+        dspRevenueTodayReal: item.isProjected ? null : dsp,
+        dspRevenueTodayProjected: item.isProjected ? dsp : null,
+        bridgeDsp: null
       };
     });
+    // Lien visuel vert → bleu : recharts trace deux polylignes; un segment teal sur la dernière heure réelle + 1ʳᵉ heure estimée
+    for (let i = 0; i < mapped.length - 1; i += 1) {
+      if (!mapped[i].isProjected && mapped[i + 1].isProjected) {
+        const v0 = mapped[i].PriceAdvertiser_PublisherSide || 0;
+        const v1 = mapped[i + 1].PriceAdvertiser_PublisherSide || 0;
+        mapped[i] = { ...mapped[i], bridgeDsp: v0 };
+        mapped[i + 1] = { ...mapped[i + 1], bridgeDsp: v1 };
+        break;
+      }
+    }
+    return mapped;
   };
 
   // Render chart component
@@ -870,21 +1055,42 @@ export default function DealAnalytics() {
                         padding: '10px',
                         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
                       }}
-                      formatter={(value, name) => [
+                      formatter={(value, name, item) => {
+                        if (item?.dataKey === 'bridgeDsp' || name === 'bridgeDsp') {
+                          return ['', ''];
+                        }
+                        if (value == null || Number.isNaN(Number(value))) {
+                          return ['', ''];
+                        }
+                        return [
                         `$${(value / 1000000).toFixed(2)}`, 
-                        name === 'PriceAdvertiser_PublisherSide' ? 'DSP Revenue' : 
+                        name === 'dspRevenueTodayReal' ? 'DSP Revenue' :
+                        name === 'dspRevenueTodayProjected' ? 'DSP Revenue (estim.)' : 
                         name === 'yesterdayDspRevenue' ? 'Yesterday DSP Revenue' : name
-                      ]}
+                        ];
+                      }}
                       labelFormatter={(label) => `Time: ${label}`}
                     />
                     <Legend />
                     <Line 
                       type="monotone" 
-                      dataKey="PriceAdvertiser_PublisherSide" 
+                      dataKey="dspRevenueTodayReal" 
                       stroke="#10b981" 
                       strokeWidth={2}
+                      connectNulls
                       name="DSP Revenue"
-                      dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
+                      dot={false}
+                      activeDot={false}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="dspRevenueTodayProjected" 
+                      stroke="#2563eb" 
+                      strokeWidth={2}
+                      connectNulls
+                      name="DSP Revenue (estim.)"
+                      dot={false}
+                      activeDot={false}
                     />
                     <Line 
                       type="monotone" 
@@ -893,7 +1099,19 @@ export default function DealAnalytics() {
                       strokeWidth={2}
                       strokeDasharray="5 5"
                       name="Yesterday DSP Revenue"
-                      dot={{ fill: '#6b7280', strokeWidth: 2, r: 4 }}
+                      dot={false}
+                      activeDot={false}
+                    />
+                    <Line 
+                      type="linear" 
+                      dataKey="bridgeDsp" 
+                      stroke="#14b8a6" 
+                      strokeWidth={2}
+                      connectNulls
+                      name=""
+                      legendType="none"
+                      dot={false}
+                      activeDot={false}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -908,14 +1126,14 @@ export default function DealAnalytics() {
           id: 'date',
           header: <TableHead className="font-medium text-center">Date</TableHead>,
           cell: ({ item }) => (
-            <TableCell className="font-medium text-center">{item.formattedDate}</TableCell>
+            <TableCell className={`font-medium text-center${item.isProjected ? ' text-blue-600' : ''}`}>{item.formattedDate}</TableCell>
           ),
         },
         {
           id: 'dspRevenue',
           header: <TableHead className="text-center">DSP Revenue</TableHead>,
           cell: ({ item }) => (
-                              <TableCell className="text-center text-green-600">
+                              <TableCell className={item.isProjected ? 'text-center text-blue-600' : 'text-center text-green-600'}>
               {formatCurrency(item.PriceAdvertiser_PublisherSide || 0)}
                               </TableCell>
           ),
@@ -936,8 +1154,10 @@ export default function DealAnalytics() {
           id: 'dspTrend',
           header: <TableHead className="text-center border-r-2 border-gray-300">Trend</TableHead>,
           cell: ({ item }) => (
-                              <TableCell className="text-center border-r-2 border-gray-300">
-              {renderTrendIndicator(item.dspRevenueTrend, item.dspRevenueChangePercent, { upColor: 'text-green-500', downColor: 'text-red-500' })}
+                              <TableCell className={`text-center border-r-2 border-gray-300${item.isProjected ? ' text-blue-600' : ''}`}>
+              {renderTrendIndicator(item.dspRevenueTrend, item.dspRevenueChangePercent, item.isProjected
+                ? { upColor: 'text-blue-500', downColor: 'text-blue-800' }
+                : { upColor: 'text-green-500', downColor: 'text-red-500' })}
                               </TableCell>
           ),
         },
@@ -945,7 +1165,7 @@ export default function DealAnalytics() {
           id: 'publisherCosts',
           header: <TableHead className="text-center">Publisher Costs</TableHead>,
           cell: ({ item }) => (
-                              <TableCell className="text-center text-red-600">
+                              <TableCell className={item.isProjected ? 'text-center text-blue-600' : 'text-center text-red-600'}>
               {formatCurrency(item.PricePublisher || 0)}
                               </TableCell>
           ),
@@ -966,8 +1186,10 @@ export default function DealAnalytics() {
           id: 'publisherTrend',
           header: <TableHead className="text-center border-r-2 border-gray-300">Trend</TableHead>,
           cell: ({ item }) => (
-                              <TableCell className="text-center border-r-2 border-gray-300">
-              {renderTrendIndicator(item.publisherCostsTrend, item.publisherCostsChangePercent, { upColor: 'text-red-500', downColor: 'text-green-500' })}
+                              <TableCell className={`text-center border-r-2 border-gray-300${item.isProjected ? ' text-blue-600' : ''}`}>
+              {renderTrendIndicator(item.publisherCostsTrend, item.publisherCostsChangePercent, item.isProjected
+                ? { upColor: 'text-blue-500', downColor: 'text-blue-800' }
+                : { upColor: 'text-red-500', downColor: 'text-green-500' })}
                               </TableCell>
           ),
         },
@@ -979,7 +1201,7 @@ export default function DealAnalytics() {
             const publisherCosts = item.PricePublisher || 0;
             const margin = dspRevenue - publisherCosts;
             return (
-                              <TableCell className="text-center text-black">
+                              <TableCell className={item.isProjected ? 'text-center text-blue-600' : 'text-center text-black'}>
                                 {formatCurrency(margin)}
                               </TableCell>
             );
@@ -1003,8 +1225,12 @@ export default function DealAnalytics() {
           id: 'marginTrend',
           header: <TableHead className="text-center border-r-2 border-gray-300">Trend</TableHead>,
           cell: ({ item }) => (
-                              <TableCell className="text-center border-r-2 border-gray-300">
-              {renderTrendIndicator(item.marginTrend, item.marginChangePercent)}
+                              <TableCell className={`text-center border-r-2 border-gray-300${item.isProjected ? ' text-blue-600' : ''}`}>
+              {renderTrendIndicator(
+                item.marginTrend,
+                item.marginChangePercent,
+                item.isProjected ? { upColor: 'text-blue-500', downColor: 'text-blue-800' } : undefined
+              )}
                               </TableCell>
           ),
         },
@@ -1019,7 +1245,17 @@ export default function DealAnalytics() {
             return (
                               <TableCell className="text-center">
               {marginPercentage > 0 ? (
-                <span className="px-2 py-0.5 text-xs font-medium transition-colors rounded-md bg-[rgb(75,99,226)] text-white inline-block">
+                <span
+                  className={
+                    item.isProjected
+                      ? 'px-2 py-0.5 text-xs font-medium transition-colors rounded-md bg-blue-100 text-blue-800 inline-block'
+                      : 'px-2 py-0.5 text-xs font-medium transition-colors rounded-md bg-[rgb(75,99,226)] text-white inline-block'
+                  }
+                >
+                  {marginPercentage.toFixed(1)}%
+                </span>
+              ) : item.isProjected ? (
+                <span className="px-2 py-0.5 text-xs font-medium rounded-md bg-blue-100 text-blue-800 inline-block">
                   {marginPercentage.toFixed(1)}%
                 </span>
               ) : (
@@ -1054,7 +1290,7 @@ export default function DealAnalytics() {
           id: 'click',
           header: <TableHead className="text-center">Click</TableHead>,
           cell: ({ item }) => (
-                              <TableCell className="text-center">
+                              <TableCell className={item.isProjected ? 'text-center text-blue-600' : 'text-center'}>
               {formatLargeNumber(item.click ?? 0)}
                               </TableCell>
           ),
@@ -1072,8 +1308,12 @@ export default function DealAnalytics() {
           id: 'clickTrend',
           header: <TableHead className="text-center border-r-2 border-gray-300">Trend</TableHead>,
           cell: ({ item }) => (
-                              <TableCell className="text-center border-r-2 border-gray-300">
-              {renderTrendIndicator(item.clickTrend, item.clickChangePercent)}
+                              <TableCell className={`text-center border-r-2 border-gray-300${item.isProjected ? ' text-blue-600' : ''}`}>
+              {renderTrendIndicator(
+                item.clickTrend,
+                item.clickChangePercent,
+                item.isProjected ? { upColor: 'text-blue-500', downColor: 'text-blue-800' } : undefined
+              )}
                               </TableCell>
           ),
         },
@@ -1081,7 +1321,7 @@ export default function DealAnalytics() {
           id: 'impression',
           header: <TableHead className="text-center">Impression</TableHead>,
           cell: ({ item }) => (
-                              <TableCell className="text-center">
+                              <TableCell className={item.isProjected ? 'text-center text-blue-600' : 'text-center'}>
               {formatLargeNumber(item.impression ?? 0)}
                               </TableCell>
           ),
@@ -1099,8 +1339,12 @@ export default function DealAnalytics() {
           id: 'impressionTrend',
           header: <TableHead className="text-center border-r-2 border-gray-300">Trend</TableHead>,
           cell: ({ item }) => (
-                              <TableCell className="text-center border-r-2 border-gray-300">
-              {renderTrendIndicator(item.impressionTrend, item.impressionChangePercent)}
+                              <TableCell className={`text-center border-r-2 border-gray-300${item.isProjected ? ' text-blue-600' : ''}`}>
+              {renderTrendIndicator(
+                item.impressionTrend,
+                item.impressionChangePercent,
+                item.isProjected ? { upColor: 'text-blue-500', downColor: 'text-blue-800' } : undefined
+              )}
                               </TableCell>
           ),
         },
@@ -1108,7 +1352,7 @@ export default function DealAnalytics() {
           id: 'ctr',
           header: <TableHead className="text-center">CTR</TableHead>,
           cell: ({ item }) => (
-                              <TableCell className="text-center">
+                              <TableCell className={item.isProjected ? 'text-center text-blue-600' : 'text-center'}>
               {formatPercentage(item.ctr ?? 0)}
                               </TableCell>
           ),
@@ -1126,8 +1370,12 @@ export default function DealAnalytics() {
           id: 'ctrTrend',
           header: <TableHead className="text-center border-r-2 border-gray-300">Trend</TableHead>,
           cell: ({ item }) => (
-                              <TableCell className="text-center border-r-2 border-gray-300">
-              {renderTrendIndicator(item.ctrTrend, item.ctrChangePercent)}
+                              <TableCell className={`text-center border-r-2 border-gray-300${item.isProjected ? ' text-blue-600' : ''}`}>
+              {renderTrendIndicator(
+                item.ctrTrend,
+                item.ctrChangePercent,
+                item.isProjected ? { upColor: 'text-blue-500', downColor: 'text-blue-800' } : undefined
+              )}
                               </TableCell>
           ),
         },
@@ -1485,6 +1733,8 @@ export default function DealAnalytics() {
       buildPayload={buildPayload}
       processAnalyticsData={processAnalyticsData}
       calculateSummaryStats={calculateSummaryStats}
+      renderChart={renderChart}
+      renderSummaryCards={renderSummaryCards}
       pageTitle="Deal Analytics"
       backButtonPath="/DealDashboard"
       backButtonLabel="Back to Deal Dashboard"
