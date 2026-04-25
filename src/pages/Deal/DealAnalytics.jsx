@@ -1027,95 +1027,164 @@ export default function DealAnalytics() {
 
   // Render chart component
   const renderChart = (analyticsData, viewMode) => {
-    if (viewMode !== 'hourly') return null;
+    if (!analyticsData?.length) return null;
 
+    if (viewMode === 'hourly') {
+      return (
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={prepareHourlyChartData(analyticsData)}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="hourOnly"
+                tick={{ fontSize: 12 }}
+                angle={-45}
+                textAnchor="end"
+                height={80}
+              />
+              <YAxis
+                tick={{ fontSize: 12 }}
+                tickFormatter={(value) => `$${(value / 1000000).toFixed(0)}`}
+              />
+              <RechartsTooltip
+                contentStyle={{
+                  borderRadius: '12px',
+                  border: '1px solid rgba(148, 163, 184, 0.3)',
+                  backgroundColor: '#f9fafb',
+                  color: '#374151',
+                  fontSize: '14px',
+                  padding: '10px',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                }}
+                formatter={(value, name, item) => {
+                  if (item?.dataKey === 'bridgeDsp' || name === 'bridgeDsp') {
+                    return ['', ''];
+                  }
+                  if (value == null || Number.isNaN(Number(value))) {
+                    return ['', ''];
+                  }
+                  return [
+                    `$${(value / 1000000).toFixed(2)}`,
+                    name === 'dspRevenueTodayReal' ? 'DSP Revenue' :
+                    name === 'dspRevenueTodayProjected' ? 'DSP Revenue (estim.)' :
+                    name === 'yesterdayDspRevenue' ? 'Yesterday DSP Revenue' : name
+                  ];
+                }}
+                labelFormatter={(label) => `Time: ${label}`}
+              />
+              <Legend />
+              <Line
+                type="monotone"
+                dataKey="dspRevenueTodayReal"
+                stroke="#10b981"
+                strokeWidth={2}
+                connectNulls
+                name="DSP Revenue"
+                dot={false}
+                activeDot={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="dspRevenueTodayProjected"
+                stroke="#2563eb"
+                strokeWidth={2}
+                connectNulls
+                name="DSP Revenue (estim.)"
+                dot={false}
+                activeDot={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="yesterdayDspRevenue"
+                stroke="#6b7280"
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                name="Yesterday DSP Revenue"
+                dot={false}
+                activeDot={false}
+              />
+              <Line
+                type="linear"
+                dataKey="bridgeDsp"
+                stroke="#14b8a6"
+                strokeWidth={2}
+                connectNulls
+                name=""
+                legendType="none"
+                dot={false}
+                activeDot={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      );
+    }
+
+    // Daily view chart (restores 5D/7D/30d chart)
     return (
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={prepareHourlyChartData(analyticsData)}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="hourOnly" 
-                      tick={{ fontSize: 12 }}
-                      angle={-45}
-                      textAnchor="end"
-                      height={80}
-                    />
-                    <YAxis 
-                      tick={{ fontSize: 12 }}
-                      tickFormatter={(value) => `$${(value / 1000000).toFixed(0)}`}
-                    />
-                    <RechartsTooltip
-                      contentStyle={{
-                        borderRadius: '12px',
-                        border: '1px solid rgba(148, 163, 184, 0.3)',
-                        backgroundColor: '#f9fafb',
-                        color: '#374151',
-                        fontSize: '14px',
-                        padding: '10px',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                      }}
-                      formatter={(value, name, item) => {
-                        if (item?.dataKey === 'bridgeDsp' || name === 'bridgeDsp') {
-                          return ['', ''];
-                        }
-                        if (value == null || Number.isNaN(Number(value))) {
-                          return ['', ''];
-                        }
-                        return [
-                        `$${(value / 1000000).toFixed(2)}`, 
-                        name === 'dspRevenueTodayReal' ? 'DSP Revenue' :
-                        name === 'dspRevenueTodayProjected' ? 'DSP Revenue (estim.)' : 
-                        name === 'yesterdayDspRevenue' ? 'Yesterday DSP Revenue' : name
-                        ];
-                      }}
-                      labelFormatter={(label) => `Time: ${label}`}
-                    />
-                    <Legend />
-                    <Line 
-                      type="monotone" 
-                      dataKey="dspRevenueTodayReal" 
-                      stroke="#10b981" 
-                      strokeWidth={2}
-                      connectNulls
-                      name="DSP Revenue"
-                      dot={false}
-                      activeDot={false}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="dspRevenueTodayProjected" 
-                      stroke="#2563eb" 
-                      strokeWidth={2}
-                      connectNulls
-                      name="DSP Revenue (estim.)"
-                      dot={false}
-                      activeDot={false}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="yesterdayDspRevenue" 
-                      stroke="#6b7280" 
-                      strokeWidth={2}
-                      strokeDasharray="5 5"
-                      name="Yesterday DSP Revenue"
-                      dot={false}
-                      activeDot={false}
-                    />
-                    <Line 
-                      type="linear" 
-                      dataKey="bridgeDsp" 
-                      stroke="#14b8a6" 
-                      strokeWidth={2}
-                      connectNulls
-                      name=""
-                      legendType="none"
-                      dot={false}
-                      activeDot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
+      <div className="h-80">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={analyticsData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              dataKey="formattedDate"
+              tick={{ fontSize: 12 }}
+              angle={-45}
+              textAnchor="end"
+              height={80}
+            />
+            <YAxis
+              tick={{ fontSize: 12 }}
+              tickFormatter={(value) => formatCurrency(value)}
+            />
+            <RechartsTooltip
+              contentStyle={{
+                borderRadius: '12px',
+                border: '1px solid rgba(148, 163, 184, 0.3)',
+                backgroundColor: '#f9fafb',
+                color: '#374151',
+                fontSize: '14px',
+                padding: '10px',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+              }}
+              formatter={(value, name, props) => [
+                formatCurrency(value),
+                props?.dataKey === 'PriceAdvertiser_PublisherSide' ? 'DSP Revenue' :
+                props?.dataKey === 'PricePublisher' ? 'Publisher Costs' :
+                props?.dataKey === 'margin' ? 'Margin' : name
+              ]}
+            />
+            <Legend />
+            <Line
+              type="monotone"
+              dataKey="PriceAdvertiser_PublisherSide"
+              stroke="#10b981"
+              strokeWidth={2}
+              name="DSP Revenue"
+              dot={false}
+              activeDot={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="PricePublisher"
+              stroke="#ef4444"
+              strokeWidth={2}
+              name="Publisher Costs"
+              dot={false}
+              activeDot={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="margin"
+              stroke="#4f46e5"
+              strokeWidth={2}
+              name="Margin"
+              dot={false}
+              activeDot={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     );
   };
 
