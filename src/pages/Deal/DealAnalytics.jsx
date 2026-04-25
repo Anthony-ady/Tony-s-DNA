@@ -1150,8 +1150,7 @@ export default function DealAnalytics() {
               formatter={(value, name, props) => [
                 formatCurrency(value),
                 props?.dataKey === 'PriceAdvertiser_PublisherSide' ? 'DSP Revenue' :
-                props?.dataKey === 'PricePublisher' ? 'Publisher Costs' :
-                props?.dataKey === 'margin' ? 'Margin' : name
+                props?.dataKey === 'PricePublisher' ? 'Publisher Costs' : name
               ]}
             />
             <Legend />
@@ -1170,15 +1169,6 @@ export default function DealAnalytics() {
               stroke="#ef4444"
               strokeWidth={2}
               name="Publisher Costs"
-              dot={false}
-              activeDot={false}
-            />
-            <Line
-              type="monotone"
-              dataKey="margin"
-              stroke="#4f46e5"
-              strokeWidth={2}
-              name="Margin"
               dot={false}
               activeDot={false}
             />
