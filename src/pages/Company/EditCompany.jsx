@@ -652,145 +652,142 @@ const EditCompany = () => {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-slate-900">Creative Scan</h3>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label htmlFor="disableCreativeScan">Creative Scan</Label>
-                          <p className="text-sm text-slate-600">Enable creative scanning for fraud detection</p>
-                        </div>
-                        <ToggleSwitch
-                          checked={hasProperty(companyData, 'SspConfig.CreativeScan.DisableCreativeScan') ? !companyData.SspConfig?.CreativeScan?.DisableCreativeScan : undefined}
-                          onCheckedChange={(checked) => {
-                            if (!checked) {
-                              // When disabling Creative Scan, only keep DisableCreativeScan: true
-                              setCompanyData({
-                                ...companyData,
-                                SspConfig: {
-                                  ...companyData.SspConfig,
-                                  CreativeScan: {
-                                    DisableCreativeScan: true
-                                  }
-                                }
-                              });
-                            } else {
-                              // When enabling Creative Scan, set DisableCreativeScan: false and initialize if needed
-                              setCompanyData({
-                                ...companyData,
-                                SspConfig: {
-                                  ...companyData.SspConfig,
-                                  CreativeScan: {
-                                    DisableCreativeScan: false,
-                                    CreativeScanPolicy: companyData.SspConfig?.CreativeScan?.CreativeScanPolicy || '',
-                                    CreativeScanRatio: companyData.SspConfig?.CreativeScan?.CreativeScanRatio || 0
-                                  }
-                                }
-                              });
-                            }
-                          }}
-                        />
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-slate-900">Creative Scan</h3>
+                        <p className="text-sm text-slate-600">Enable creative scanning for fraud detection</p>
                       </div>
-                      {(!companyData.SspConfig?.CreativeScan?.DisableCreativeScan) && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="creativeScanPolicy">Creative Scan Policy</Label>
-                            <Select
-                              value={companyData.SspConfig?.CreativeScan?.CreativeScanPolicy || ''}
+                      <ToggleSwitch
+                        checked={hasProperty(companyData, 'SspConfig.CreativeScan.DisableCreativeScan') ? !companyData.SspConfig?.CreativeScan?.DisableCreativeScan : undefined}
+                        onCheckedChange={(checked) => {
+                          if (!checked) {
+                            // When disabling Creative Scan, only keep DisableCreativeScan: true
+                            setCompanyData({
+                              ...companyData,
+                              SspConfig: {
+                                ...companyData.SspConfig,
+                                CreativeScan: {
+                                  DisableCreativeScan: true
+                                }
+                              }
+                            });
+                          } else {
+                            // When enabling Creative Scan, set DisableCreativeScan: false and initialize if needed
+                            setCompanyData({
+                              ...companyData,
+                              SspConfig: {
+                                ...companyData.SspConfig,
+                                CreativeScan: {
+                                  DisableCreativeScan: false,
+                                  CreativeScanPolicy: companyData.SspConfig?.CreativeScan?.CreativeScanPolicy || '',
+                                  CreativeScanRatio: companyData.SspConfig?.CreativeScan?.CreativeScanRatio || 0
+                                }
+                              }
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                    {(!companyData.SspConfig?.CreativeScan?.DisableCreativeScan) && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="creativeScanPolicy">Creative Scan Policy</Label>
+                          <Select
+                            value={companyData.SspConfig?.CreativeScan?.CreativeScanPolicy || ''}
+                            onValueChange={(value) => setCompanyData({
+                              ...companyData,
+                              SspConfig: {
+                                ...companyData.SspConfig,
+                                CreativeScan: {
+                                  ...companyData.SspConfig?.CreativeScan,
+                                  CreativeScanPolicy: value
+                                }
+                              }
+                            })}
+                          >
+                            <SelectTrigger className="bg-white">
+                              <SelectValue placeholder="Select a policy" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {creativeScanPolicies.map((p) => (
+                                <SelectItem key={p.uid} value={p.uid}>
+                                  {p.name} — {p.uid}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="creativeScanRatio">Creative Scan Ratio (%)</Label>
+                          <div className="flex items-center gap-3">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8 shrink-0"
+                              onClick={() => {
+                                const currentValue = companyData.SspConfig?.CreativeScan?.CreativeScanRatio || 0;
+                                const newValue = Math.max(0, currentValue - 0.01);
+                                setCompanyData({
+                                  ...companyData,
+                                  SspConfig: {
+                                    ...companyData.SspConfig,
+                                    CreativeScan: {
+                                      ...companyData.SspConfig?.CreativeScan,
+                                      CreativeScanRatio: newValue
+                                    }
+                                  }
+                                });
+                              }}
+                            >
+                              <span className="text-sm">-</span>
+                            </Button>
+                            <Slider
+                              value={[(companyData.SspConfig?.CreativeScan?.CreativeScanRatio || 0) * 100]}
                               onValueChange={(value) => setCompanyData({
                                 ...companyData,
                                 SspConfig: {
                                   ...companyData.SspConfig,
                                   CreativeScan: {
                                     ...companyData.SspConfig?.CreativeScan,
-                                    CreativeScanPolicy: value
+                                    CreativeScanRatio: value[0] / 100
                                   }
                                 }
                               })}
-                            >
-                              <SelectTrigger className="bg-white">
-                                <SelectValue placeholder="Select a policy" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {creativeScanPolicies.map((p) => (
-                                  <SelectItem key={p.uid} value={p.uid}>
-                                    {p.name} — {p.uid}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="creativeScanRatio">Creative Scan Ratio (%)</Label>
-                            <div className="flex items-center gap-3">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                className="h-8 w-8 shrink-0"
-                                onClick={() => {
-                                  const currentValue = companyData.SspConfig?.CreativeScan?.CreativeScanRatio || 0;
-                                  const newValue = Math.max(0, currentValue - 0.01);
-                                  setCompanyData({
-                                    ...companyData,
-                                    SspConfig: {
-                                      ...companyData.SspConfig,
-                                      CreativeScan: {
-                                        ...companyData.SspConfig?.CreativeScan,
-                                        CreativeScanRatio: newValue
-                                      }
-                                    }
-                                  });
-                                }}
-                              >
-                                <span className="text-sm">-</span>
-                              </Button>
-                              <Slider
-                                value={[(companyData.SspConfig?.CreativeScan?.CreativeScanRatio || 0) * 100]}
-                                onValueChange={(value) => setCompanyData({
+                              max={100}
+                              min={0}
+                              step={1}
+                              className="flex-1"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8 shrink-0"
+                              onClick={() => {
+                                const currentValue = companyData.SspConfig?.CreativeScan?.CreativeScanRatio || 0;
+                                const newValue = Math.min(1, currentValue + 0.01);
+                                setCompanyData({
                                   ...companyData,
                                   SspConfig: {
                                     ...companyData.SspConfig,
                                     CreativeScan: {
                                       ...companyData.SspConfig?.CreativeScan,
-                                      CreativeScanRatio: value[0] / 100
+                                      CreativeScanRatio: newValue
                                     }
                                   }
-                                })}
-                                max={100}
-                                min={0}
-                                step={1}
-                                className="flex-1"
-                              />
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                className="h-8 w-8 shrink-0"
-                                onClick={() => {
-                                  const currentValue = companyData.SspConfig?.CreativeScan?.CreativeScanRatio || 0;
-                                  const newValue = Math.min(1, currentValue + 0.01);
-                                  setCompanyData({
-                                    ...companyData,
-                                    SspConfig: {
-                                      ...companyData.SspConfig,
-                                      CreativeScan: {
-                                        ...companyData.SspConfig?.CreativeScan,
-                                        CreativeScanRatio: newValue
-                                      }
-                                    }
-                                  });
-                                }}
-                              >
-                                <span className="text-sm">+</span>
-                              </Button>
-                              <div className="bg-white border border-slate-300 rounded px-3 py-1.5 min-w-[60px] text-center font-semibold text-slate-900">
-                                {(((companyData.SspConfig?.CreativeScan?.CreativeScanRatio || 0) * 100).toFixed(0))}%
-                              </div>
+                                });
+                              }}
+                            >
+                              <span className="text-sm">+</span>
+                            </Button>
+                            <div className="bg-white border border-slate-300 rounded px-3 py-1.5 min-w-[60px] text-center font-semibold text-slate-900">
+                              {(((companyData.SspConfig?.CreativeScan?.CreativeScanRatio || 0) * 100).toFixed(0))}%
                             </div>
                           </div>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

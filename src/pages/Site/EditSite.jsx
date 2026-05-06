@@ -784,14 +784,12 @@ const EditSite = () => {
                   <Separator />
 
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-slate-900">Creative Scan</h3>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label htmlFor="disableCreativeScan">Creative Scan</Label>
-                          <p className="text-sm text-slate-600">Enable creative scanning for fraud detection</p>
-                        </div>
-                        <ToggleSwitch
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-slate-900">Creative Scan</h3>
+                        <p className="text-sm text-slate-600">Enable creative scanning for fraud detection</p>
+                      </div>
+                      <ToggleSwitch
                           checked={hasProperty(siteData, 'SspConfig.CreativeScan.DisableCreativeScan') ? !siteData.SspConfig?.CreativeScan?.DisableCreativeScan : undefined}
                           onCheckedChange={(checked) => {
                             if (!checked) {
@@ -821,7 +819,7 @@ const EditSite = () => {
                             }
                           }}
                         />
-                      </div>
+                    </div>
                       {/* Creative Scan details (shown when ON) */}
                       {(!siteData.SspConfig?.CreativeScan?.DisableCreativeScan) && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -923,7 +921,6 @@ const EditSite = () => {
                           </div>
                         </div>
                       )}
-                    </div>
                   </div>
 
                   <Separator />

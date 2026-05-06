@@ -1034,9 +1034,10 @@ const EditRealm = () => {
                           })}
                         />
                       </div>
-                      <div className="flex items-center justify-between ">
+                      <div className="flex items-center justify-between w-full">
                         <div>
-                          <Label htmlFor="enableCreativeScan">Creative Scan</Label>
+                          <h3 className="text-lg font-semibold text-slate-900">Creative Scan</h3>
+                          <p className="text-sm text-slate-600">Enable creative scanning for fraud detection</p>
                         </div>
                         <ToggleSwitch
                           checked={!realmData.SspConfig?.CreativeScan?.DisableCreativeScan}
