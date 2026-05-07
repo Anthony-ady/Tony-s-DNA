@@ -436,6 +436,19 @@ const EditPlacement = () => {
     return cleaned;
   };
 
+  // Helper function to check if a nested property exists
+  const hasProperty = (obj, path) => {
+    const keys = path.split('.');
+    let current = obj;
+    for (const key of keys) {
+      if (current === null || current === undefined || !(key in current)) {
+        return false;
+      }
+      current = current[key];
+    }
+    return true;
+  };
+
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return 'N/A';
     const date = new Date(timestamp);
@@ -2281,6 +2294,116 @@ const EditPlacement = () => {
                       </div>
                       )}
                 </div>
+
+                  <Separator />
+
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-slate-900">Human Security</h3>
+                        <p className="text-sm text-slate-600">Enable human scanning for security and fraud protection</p>
+                      </div>
+                      <ToggleSwitch
+                        checked={hasProperty(placementData, 'SspConfig.HumanSecurity.DisableHumanSecurity') ? !placementData.SspConfig?.HumanSecurity?.DisableHumanSecurity : undefined}
+                        onCheckedChange={(checked) => {
+                          if (!checked) {
+                            setPlacementData({
+                              ...placementData,
+                              SspConfig: {
+                                ...placementData.SspConfig,
+                                HumanSecurity: {
+                                  DisableHumanSecurity: true
+                                }
+                              }
+                            });
+                          } else {
+                            setPlacementData({
+                              ...placementData,
+                              SspConfig: {
+                                ...placementData.SspConfig,
+                                HumanSecurity: {
+                                  DisableHumanSecurity: false,
+                                  HumanSecurityScanRatio: placementData.SspConfig?.HumanSecurity?.HumanSecurityScanRatio ?? 0.001
+                                }
+                              }
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+
+                    {(!placementData.SspConfig?.HumanSecurity?.DisableHumanSecurity) && (
+                      <div className="space-y-2">
+                        <Label htmlFor="humanSecurityScanRatio">Human Security Scan Ratio (%)</Label>
+                        <div className="flex items-center gap-3">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 shrink-0"
+                            onClick={() => {
+                              const currentValue = placementData.SspConfig?.HumanSecurity?.HumanSecurityScanRatio ?? 0.001;
+                              const newValue = Math.max(0, currentValue - 0.001);
+                              setPlacementData({
+                                ...placementData,
+                                SspConfig: {
+                                  ...placementData.SspConfig,
+                                  HumanSecurity: {
+                                    ...placementData.SspConfig?.HumanSecurity,
+                                    HumanSecurityScanRatio: newValue
+                                  }
+                                }
+                              });
+                            }}
+                          >
+                            <span className="text-sm">-</span>
+                          </Button>
+                          <Slider
+                            value={[(placementData.SspConfig?.HumanSecurity?.HumanSecurityScanRatio ?? 0.001) * 100]}
+                            onValueChange={(value) => setPlacementData({
+                              ...placementData,
+                              SspConfig: {
+                                ...placementData.SspConfig,
+                                HumanSecurity: {
+                                  ...placementData.SspConfig?.HumanSecurity,
+                                  HumanSecurityScanRatio: value[0] / 100
+                                }
+                              }
+                            })}
+                            max={100}
+                            min={0}
+                            step={0.1}
+                            className="flex-1"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 shrink-0"
+                            onClick={() => {
+                              const currentValue = placementData.SspConfig?.HumanSecurity?.HumanSecurityScanRatio ?? 0.001;
+                              const newValue = Math.min(1, currentValue + 0.001);
+                              setPlacementData({
+                                ...placementData,
+                                SspConfig: {
+                                  ...placementData.SspConfig,
+                                  HumanSecurity: {
+                                    ...placementData.SspConfig?.HumanSecurity,
+                                    HumanSecurityScanRatio: newValue
+                                  }
+                                }
+                              });
+                            }}
+                          >
+                            <span className="text-sm">+</span>
+                          </Button>
+                          <div className="bg-white border border-slate-300 rounded px-3 py-1.5 min-w-[70px] text-center font-semibold text-slate-900">
+                            {(((placementData.SspConfig?.HumanSecurity?.HumanSecurityScanRatio ?? 0.001) * 100).toFixed(1))}%
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   <Separator />
 

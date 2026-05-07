@@ -163,6 +163,19 @@ const EditRealm = () => {
     return cleaned;
   };
 
+  // Helper function to check if a nested property exists
+  const hasProperty = (obj, path) => {
+    const keys = path.split('.');
+    let current = obj;
+    for (const key of keys) {
+      if (current === null || current === undefined || !(key in current)) {
+        return false;
+      }
+      current = current[key];
+    }
+    return true;
+  };
+
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return 'N/A';
     const date = new Date(timestamp);
@@ -1154,6 +1167,120 @@ const EditRealm = () => {
                           </div>
                         </div>
                       )}
+
+                      <Separator />
+
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between w-full">
+                          <div>
+                            <h3 className="text-lg font-semibold text-slate-900">Human Security</h3>
+                            <p className="text-sm text-slate-600">Enable human scanning for security and fraud protection</p>
+                          </div>
+                          <ToggleSwitch
+                            checked={
+                              hasProperty(realmData, 'SspConfig.HumanSecurity.DisableHumanSecurity')
+                                ? !realmData.SspConfig?.HumanSecurity?.DisableHumanSecurity
+                                : undefined
+                            }
+                            onCheckedChange={(checked) => {
+                              if (!checked) {
+                                setRealmData({
+                                  ...realmData,
+                                  SspConfig: {
+                                    ...realmData.SspConfig,
+                                    HumanSecurity: {
+                                      DisableHumanSecurity: true
+                                    }
+                                  }
+                                });
+                              } else {
+                                setRealmData({
+                                  ...realmData,
+                                  SspConfig: {
+                                    ...realmData.SspConfig,
+                                    HumanSecurity: {
+                                      DisableHumanSecurity: false,
+                                      HumanSecurityScanRatio: realmData.SspConfig?.HumanSecurity?.HumanSecurityScanRatio ?? 0.001
+                                    }
+                                  }
+                                });
+                              }
+                            }}
+                          />
+                        </div>
+
+                        {(!realmData.SspConfig?.HumanSecurity?.DisableHumanSecurity) && (
+                          <div className="space-y-2">
+                            <Label htmlFor="humanSecurityScanRatio">Human Security Scan Ratio (%)</Label>
+                            <div className="flex items-center gap-3">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8 shrink-0"
+                                onClick={() => {
+                                  const currentValue = realmData.SspConfig?.HumanSecurity?.HumanSecurityScanRatio ?? 0.001;
+                                  const newValue = Math.max(0, currentValue - 0.001);
+                                  setRealmData({
+                                    ...realmData,
+                                    SspConfig: {
+                                      ...realmData.SspConfig,
+                                      HumanSecurity: {
+                                        ...realmData.SspConfig?.HumanSecurity,
+                                        HumanSecurityScanRatio: newValue
+                                      }
+                                    }
+                                  });
+                                }}
+                              >
+                                <span className="text-sm">-</span>
+                              </Button>
+                              <Slider
+                                value={[(realmData.SspConfig?.HumanSecurity?.HumanSecurityScanRatio ?? 0.001) * 100]}
+                                onValueChange={(value) => setRealmData({
+                                  ...realmData,
+                                  SspConfig: {
+                                    ...realmData.SspConfig,
+                                    HumanSecurity: {
+                                      ...realmData.SspConfig?.HumanSecurity,
+                                      HumanSecurityScanRatio: value[0] / 100
+                                    }
+                                  }
+                                })}
+                                max={100}
+                                min={0}
+                                step={0.1}
+                                className="flex-1"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8 shrink-0"
+                                onClick={() => {
+                                  const currentValue = realmData.SspConfig?.HumanSecurity?.HumanSecurityScanRatio ?? 0.001;
+                                  const newValue = Math.min(1, currentValue + 0.001);
+                                  setRealmData({
+                                    ...realmData,
+                                    SspConfig: {
+                                      ...realmData.SspConfig,
+                                      HumanSecurity: {
+                                        ...realmData.SspConfig?.HumanSecurity,
+                                        HumanSecurityScanRatio: newValue
+                                      }
+                                    }
+                                  });
+                                }}
+                              >
+                                <span className="text-sm">+</span>
+                              </Button>
+                              <div className="bg-white border border-slate-300 rounded px-3 py-1.5 min-w-[70px] text-center font-semibold text-slate-900">
+                                {(((realmData.SspConfig?.HumanSecurity?.HumanSecurityScanRatio ?? 0.001) * 100).toFixed(1))}%
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </CardContent>

@@ -1529,9 +1529,9 @@ export default function EditDSP() {
   };
 
   const updateDuplicationFactor = (nextFactor) => {
-    // Treat empty/0 as "unset" and explicitly send null to backend on Save
+    // Treat empty/0/1 as "unset" and explicitly send null to backend on Save
     const raw = `${nextFactor ?? ''}`.trim();
-    if (!raw || raw === '0') {
+    if (!raw || raw === '0' || raw === '1') {
       setError(null);
       applyLocalChange((data) => {
         data.duplication_factor = null;

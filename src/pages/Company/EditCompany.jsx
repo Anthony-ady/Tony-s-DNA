@@ -789,6 +789,116 @@ const EditCompany = () => {
                       </div>
                     )}
                   </div>
+
+                  <Separator />
+
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-slate-900">Human Security</h3>
+                        <p className="text-sm text-slate-600">Enable human scanning for security and fraud protection</p>
+                      </div>
+                      <ToggleSwitch
+                        checked={hasProperty(companyData, 'SspConfig.HumanSecurity.DisableHumanSecurity') ? !companyData.SspConfig?.HumanSecurity?.DisableHumanSecurity : undefined}
+                        onCheckedChange={(checked) => {
+                          if (!checked) {
+                            setCompanyData({
+                              ...companyData,
+                              SspConfig: {
+                                ...companyData.SspConfig,
+                                HumanSecurity: {
+                                  DisableHumanSecurity: true
+                                }
+                              }
+                            });
+                          } else {
+                            setCompanyData({
+                              ...companyData,
+                              SspConfig: {
+                                ...companyData.SspConfig,
+                                HumanSecurity: {
+                                  DisableHumanSecurity: false,
+                                  HumanSecurityScanRatio: companyData.SspConfig?.HumanSecurity?.HumanSecurityScanRatio ?? 0.001
+                                }
+                              }
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+
+                    {(!companyData.SspConfig?.HumanSecurity?.DisableHumanSecurity) && (
+                      <div className="space-y-2">
+                        <Label htmlFor="humanSecurityScanRatio">Human Security Scan Ratio (%)</Label>
+                        <div className="flex items-center gap-3">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 shrink-0"
+                            onClick={() => {
+                              const currentValue = companyData.SspConfig?.HumanSecurity?.HumanSecurityScanRatio ?? 0.001;
+                              const newValue = Math.max(0, currentValue - 0.001);
+                              setCompanyData({
+                                ...companyData,
+                                SspConfig: {
+                                  ...companyData.SspConfig,
+                                  HumanSecurity: {
+                                    ...companyData.SspConfig?.HumanSecurity,
+                                    HumanSecurityScanRatio: newValue
+                                  }
+                                }
+                              });
+                            }}
+                          >
+                            <span className="text-sm">-</span>
+                          </Button>
+                          <Slider
+                            value={[(companyData.SspConfig?.HumanSecurity?.HumanSecurityScanRatio ?? 0.001) * 100]}
+                            onValueChange={(value) => setCompanyData({
+                              ...companyData,
+                              SspConfig: {
+                                ...companyData.SspConfig,
+                                HumanSecurity: {
+                                  ...companyData.SspConfig?.HumanSecurity,
+                                  HumanSecurityScanRatio: value[0] / 100
+                                }
+                              }
+                            })}
+                            max={100}
+                            min={0}
+                            step={0.1}
+                            className="flex-1"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 shrink-0"
+                            onClick={() => {
+                              const currentValue = companyData.SspConfig?.HumanSecurity?.HumanSecurityScanRatio ?? 0.001;
+                              const newValue = Math.min(1, currentValue + 0.001);
+                              setCompanyData({
+                                ...companyData,
+                                SspConfig: {
+                                  ...companyData.SspConfig,
+                                  HumanSecurity: {
+                                    ...companyData.SspConfig?.HumanSecurity,
+                                    HumanSecurityScanRatio: newValue
+                                  }
+                                }
+                              });
+                            }}
+                          >
+                            <span className="text-sm">+</span>
+                          </Button>
+                          <div className="bg-white border border-slate-300 rounded px-3 py-1.5 min-w-[70px] text-center font-semibold text-slate-900">
+                            {(((companyData.SspConfig?.HumanSecurity?.HumanSecurityScanRatio ?? 0.001) * 100).toFixed(1))}%
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             )}
