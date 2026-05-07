@@ -28,6 +28,8 @@ export default function Site() {
 
   // In-memory cache (same session) + sessionStorage (survives page refresh in same tab)
   const sitesCacheRef = useRef({ key: null, data: [], totalCount: 0 });
+  const searchTermRef = useRef('');
+  searchTermRef.current = searchTerm;
 
   // Listen for search term changes from Layout header via window event
   useEffect(() => {
@@ -183,33 +185,56 @@ export default function Site() {
     fetchSites();
   }, []);
 
-  // Reload sites when realm or company selection changes in header
+  // Reload sites when realm or company selection changes in header (ref avoids stale search on reset)
   useEffect(() => {
     const handleRealmChange = () => {
-      fetchSites(searchTerm);
-    };
-    
-    const handleCompanyChange = () => {
-      fetchSites(searchTerm);
+      fetchSites(searchTermRef.current);
     };
 
-    // Listen for custom event when realm or company changes
+    const handleCompanyChange = () => {
+      fetchSites(searchTermRef.current);
+    };
+
+    const handleStorage = (e) => {
+      if (e.key === 'selected-realm-id' || e.key === 'selected-company-id') {
+        fetchSites(searchTermRef.current);
+      }
+    };
+
     window.addEventListener('realmChanged', handleRealmChange);
     window.addEventListener('companyChanged', handleCompanyChange);
-    
-    // Also listen for storage events from other tabs
-    window.addEventListener('storage', (e) => {
-      if (e.key === 'selected-realm-id' || e.key === 'selected-company-id') {
-        fetchSites(searchTerm);
-      }
-    });
+    window.addEventListener('storage', handleStorage);
 
     return () => {
       window.removeEventListener('realmChanged', handleRealmChange);
       window.removeEventListener('companyChanged', handleCompanyChange);
-      window.removeEventListener('storage', handleRealmChange);
+      window.removeEventListener('storage', handleStorage);
     };
-  }, [searchTerm]);
+  }, []);
+
+  useEffect(() => {
+    const prepare = () => {
+      searchTermRef.current = '';
+    };
+    window.addEventListener('siteListPrepareReset', prepare);
+    return () => window.removeEventListener('siteListPrepareReset', prepare);
+  }, []);
+
+  useEffect(() => {
+    const handleSupplySiteListReset = () => {
+      try {
+        sessionStorage.removeItem(SITES_CACHE_STORAGE_KEY);
+      } catch (_) {}
+      sitesCacheRef.current = { key: null, data: [], totalCount: 0 };
+      setSearchTerm('');
+      searchTermRef.current = '';
+      setCurrentPage(0);
+      fetchSites('', true);
+    };
+    window.addEventListener('supplySiteListReset', handleSupplySiteListReset);
+    return () => window.removeEventListener('supplySiteListReset', handleSupplySiteListReset);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- global header reset listener
+  }, []);
 
 
   // Update current page data when page changes

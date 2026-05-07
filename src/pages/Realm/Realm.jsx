@@ -39,6 +39,21 @@ export default function Realm() {
       window.removeEventListener('realmSearchChanged', handleSearchChange);
     };
   }, []);
+
+  // Header refresh: clear caches and reload full realm list (Layout clears search input separately)
+  useEffect(() => {
+    const handleSupplyRealmListReset = () => {
+      try {
+        sessionStorage.removeItem(REALM_CACHE_STORAGE_KEY);
+      } catch (_) {}
+      realmCacheRef.current = { key: null, data: [], totalCount: 0, page: 0 };
+      setSearchTerm('');
+      fetchRealms(0, '', true);
+    };
+    window.addEventListener('supplyRealmListReset', handleSupplyRealmListReset);
+    return () => window.removeEventListener('supplyRealmListReset', handleSupplyRealmListReset);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- listener intentionally stable; fetchRealms uses latest closure via re-mount semantics not needed for global UI reset
+  }, []);
   
   // Handle search with debouncing when searchTerm changes
   useEffect(() => {

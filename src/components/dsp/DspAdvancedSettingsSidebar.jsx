@@ -7,18 +7,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Edit3, Check, X, Loader2, GitBranch, Code, Scan, Shield, Settings, ChevronRight, Link2, Plus, RefreshCw } from 'lucide-react';
+import { Edit3, Check, X, Loader2, GitBranch, Code, Scan, Shield, Settings, ChevronRight, Link2, Plus, RefreshCw, HelpCircle } from 'lucide-react';
 import FeesEditor from './FeesEditor';
 import { apiUrl, API_ENDPOINTS } from '@/config/api';
 import { authService } from '@/services/authService';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { UserSyncPanel } from '@/pages/UserSync/UserSync';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const EditableField = ({ label, value, onSave, icon, isSaving: isParentSaving }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [currentValue, setCurrentValue] = useState(value);
     const inputRef = useRef(null);
     const cancelNextBlur = useRef(false);
+    const placeholderLabel = typeof label === 'string' ? label : '';
 
     useEffect(() => {
         if (isEditing && inputRef.current) {
@@ -77,7 +79,7 @@ const EditableField = ({ label, value, onSave, icon, isSaving: isParentSaving })
                         onKeyDown={handleKeyDown}
                         type="number"
                         className="text-sm w-24"
-                        placeholder={label}
+                        placeholder={placeholderLabel}
                         disabled={isParentSaving}
                     />
                     <Button
@@ -578,6 +580,7 @@ export default function DspAdvancedSettingsSidebar({
     onUpdateRevenueAuctionType,
     onUpdateBidRequestOverwrite,
     onUpdateCreativeScan,
+    onUpdateDuplicationFactor,
     onUpdateFees,
     onUpdateFraudDetectionLevel,
     onUpdateCookieSyncIds,
@@ -593,6 +596,7 @@ export default function DspAdvancedSettingsSidebar({
         bid_request_overwrite,
         allow_creative_scan,
         creative_scan_ratio,
+        duplication_factor,
         fraud_detection_filtering_level,
         fees,
         cookie_sync_ids
@@ -635,6 +639,37 @@ export default function DspAdvancedSettingsSidebar({
                     icon={<Shield className="w-5 h-5 text-slate-500" />}
                     isSaving={isSaving}
                 />
+                {onUpdateDuplicationFactor && (
+                    <EditableField
+                        label={(
+                            <span className="inline-flex items-center gap-2">
+                                <span>Duplication Factor</span>
+                                <TooltipProvider delayDuration={150}>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                                type="button"
+                                                className="inline-flex h-5 w-5 items-center justify-center rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(75,99,226)]"
+                                                aria-label="Duplication factor help"
+                                            >
+                                                <HelpCircle className="h-4 w-4" />
+                                            </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" className="max-w-[420px] bg-slate-900 text-slate-50">
+                                            <p className="text-xs leading-relaxed">
+                                                Sets the total number of requests sent to the DSP. For example, a factor of 2 sends the original request plus 1 duplicate. Duplicates automatically apply seat exclusions and unique impression IDs.
+                                            </p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            </span>
+                        )}
+                        value={duplication_factor}
+                        onSave={(value) => handleSave(onUpdateDuplicationFactor, value)}
+                        icon={<RefreshCw className="w-5 h-5 text-slate-500" />}
+                        isSaving={isSaving}
+                    />
+                )}
                 <EditableNumericSelect
                     label="Fraud Detection Filtering Level"
                     value={fraud_detection_filtering_level}

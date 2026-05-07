@@ -26,6 +26,8 @@ export default function Company() {
 
   const authToken = authService.getToken();
   const companyCacheRef = useRef({ key: null, data: [], totalCount: 0 });
+  const searchTermRef = useRef('');
+  searchTermRef.current = searchTerm;
 
   // Get selected realm from localStorage (managed by Layout header)
   const getSelectedRealmId = () => {
@@ -151,31 +153,52 @@ export default function Company() {
     loadInitial();
   }, []);
 
-  // Reload companies when realm selection changes in header
+  // Reload companies when realm selection changes in header (use ref so handlers stay stable)
   useEffect(() => {
     const handleRealmChange = () => {
       if (hasLoadedRef.current) {
-        fetchCompanies(searchTerm);
+        fetchCompanies(searchTermRef.current);
       }
     };
 
     const handleStorage = (event) => {
       if (event.key === 'selected-realm-id' && hasLoadedRef.current) {
-      fetchCompanies(searchTerm);
+        fetchCompanies(searchTermRef.current);
       }
     };
 
-    // Listen for custom event when realm changes
     window.addEventListener('realmChanged', handleRealmChange);
-    
-    // Also listen for storage events from other tabs
     window.addEventListener('storage', handleStorage);
 
     return () => {
       window.removeEventListener('realmChanged', handleRealmChange);
       window.removeEventListener('storage', handleStorage);
     };
-  }, [searchTerm]);
+  }, []);
+
+  useEffect(() => {
+    const prepare = () => {
+      searchTermRef.current = '';
+    };
+    window.addEventListener('companyListPrepareReset', prepare);
+    return () => window.removeEventListener('companyListPrepareReset', prepare);
+  }, []);
+
+  useEffect(() => {
+    const handleSupplyCompanyListReset = () => {
+      try {
+        sessionStorage.removeItem(COMPANY_CACHE_STORAGE_KEY);
+      } catch (_) {}
+      companyCacheRef.current = { key: null, data: [], totalCount: 0 };
+      setSearchTerm('');
+      searchTermRef.current = '';
+      setCurrentPage(0);
+      fetchCompanies('', true);
+    };
+    window.addEventListener('supplyCompanyListReset', handleSupplyCompanyListReset);
+    return () => window.removeEventListener('supplyCompanyListReset', handleSupplyCompanyListReset);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset listener wired once; fetchCompanies stable enough for this global action
+  }, []);
 
   // Listen for search term changes from Layout header via window event
   useEffect(() => {

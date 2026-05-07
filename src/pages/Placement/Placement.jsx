@@ -31,6 +31,8 @@ export default function Placement() {
   const initialLoadDoneRef = useRef(false);
   const placementCacheRef = useRef({ key: null, data: [], totalCount: 0 });
   const paginationRef = useRef({ currentPage: 0, pageSize: 20 });
+  const searchTermRef = useRef('');
+  searchTermRef.current = searchTerm;
 
   // Get selected realm and company from localStorage (managed by Layout header)
   const getSelectedRealmId = () => {
@@ -199,35 +201,24 @@ export default function Placement() {
 
   // Reload placements when realm or company selection changes in header
   useEffect(() => {
-    if (!initialLoadDoneRef.current) {
-      return;
-    }
-
     const handleRealmChange = () => {
-      if (fetchPlacementsRef.current) {
-        fetchPlacementsRef.current(searchTerm);
-      }
+      if (!initialLoadDoneRef.current || !fetchPlacementsRef.current) return;
+      fetchPlacementsRef.current(searchTermRef.current);
     };
-    
+
     const handleCompanyChange = () => {
-      if (fetchPlacementsRef.current) {
-        fetchPlacementsRef.current(searchTerm);
-      }
+      if (!initialLoadDoneRef.current || !fetchPlacementsRef.current) return;
+      fetchPlacementsRef.current(searchTermRef.current);
     };
 
     const handleStorageChange = (e) => {
-      if (e.key === 'selected-realm-id' || e.key === 'selected-company-id') {
-        if (fetchPlacementsRef.current) {
-          fetchPlacementsRef.current(searchTerm);
-        }
-      }
+      if (e.key !== 'selected-realm-id' && e.key !== 'selected-company-id') return;
+      if (!initialLoadDoneRef.current || !fetchPlacementsRef.current) return;
+      fetchPlacementsRef.current(searchTermRef.current);
     };
 
-    // Listen for custom event when realm or company changes
     window.addEventListener('realmChanged', handleRealmChange);
     window.addEventListener('companyChanged', handleCompanyChange);
-    
-    // Also listen for storage events from other tabs
     window.addEventListener('storage', handleStorageChange);
 
     return () => {
@@ -235,7 +226,32 @@ export default function Placement() {
       window.removeEventListener('companyChanged', handleCompanyChange);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [searchTerm, fetchPlacements]);
+  }, []);
+
+  useEffect(() => {
+    const prepare = () => {
+      searchTermRef.current = '';
+    };
+    window.addEventListener('placementListPrepareReset', prepare);
+    return () => window.removeEventListener('placementListPrepareReset', prepare);
+  }, []);
+
+  useEffect(() => {
+    const handleSupplyPlacementListReset = () => {
+      try {
+        sessionStorage.removeItem(PLACEMENT_CACHE_STORAGE_KEY);
+      } catch (_) {}
+      placementCacheRef.current = { key: null, data: [], totalCount: 0 };
+      setSearchTerm('');
+      searchTermRef.current = '';
+      setCurrentPage(0);
+      if (fetchPlacementsRef.current) {
+        fetchPlacementsRef.current('', true);
+      }
+    };
+    window.addEventListener('supplyPlacementListReset', handleSupplyPlacementListReset);
+    return () => window.removeEventListener('supplyPlacementListReset', handleSupplyPlacementListReset);
+  }, []);
 
   paginationRef.current = { currentPage, pageSize };
 

@@ -1528,6 +1528,30 @@ export default function EditDSP() {
     });
   };
 
+  const updateDuplicationFactor = (nextFactor) => {
+    // Treat empty/0 as "unset" and explicitly send null to backend on Save
+    const raw = `${nextFactor ?? ''}`.trim();
+    if (!raw || raw === '0') {
+      setError(null);
+      applyLocalChange((data) => {
+        data.duplication_factor = null;
+        return data;
+      });
+      return;
+    }
+
+    const parsed = Number.parseInt(raw, 10);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      setError("Duplication factor must be a positive integer.");
+      return;
+    }
+    setError(null);
+    applyLocalChange((data) => {
+      data.duplication_factor = parsed;
+      return data;
+    });
+  };
+
   const updateCookieSyncIds = (newIds) => {
     const ids = Array.isArray(newIds) ? [...newIds] : [];
     cookieSyncIdsRef.current = ids;
@@ -1570,6 +1594,10 @@ export default function EditDSP() {
       delete transformedData.lock_version;
 
       const cleanedData = removeNullFields(transformedData);
+      // Keep explicit clears (null) for fields that must be sent as null to backend
+      if (Object.prototype.hasOwnProperty.call(transformedData, 'duplication_factor') && transformedData.duplication_factor === null) {
+        cleanedData.duplication_factor = null;
+      }
 
       const payload = {
         Data: cleanedData,
@@ -1814,6 +1842,7 @@ export default function EditDSP() {
                       onUpdateRevenueAuctionType={updateRevenueAuctionType}
                       onUpdateBidRequestOverwrite={updateBidRequestOverwrite}
                       onUpdateCreativeScan={updateCreativeScan}
+                      onUpdateDuplicationFactor={updateDuplicationFactor}
                       onUpdateFees={updateFees}
                       onUpdateFraudDetectionLevel={updateFraudDetectionLevel}
                       onUpdateCookieSyncIds={updateCookieSyncIds}

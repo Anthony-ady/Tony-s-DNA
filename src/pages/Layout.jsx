@@ -779,6 +779,54 @@ export default function Layout({ children, currentPageName }) {
         // Dispatch custom event to notify other components
         window.dispatchEvent(new Event('realmChanged'));
     };
+
+    /** Realm list (Manager): clear header search + bust list cache + reload */
+    const resetSupplyRealmList = () => {
+        setRealmPageSearchTerm('');
+        window.dispatchEvent(new CustomEvent('supplyRealmListReset'));
+    };
+
+    /**
+     * Company list (Manager): clear header search + realm filter + bust cache + reload.
+     * Prepare event keeps Company fetch aligned before realmChanged runs (sync ref).
+     */
+    const resetSupplyCompanyList = () => {
+        window.dispatchEvent(new CustomEvent('companyListPrepareReset'));
+        setCompanyPageSearchTerm('');
+        saveRealmSelection('');
+        window.dispatchEvent(new CustomEvent('supplyCompanyListReset'));
+    };
+
+    /** Site list (Manager): clear search + realm + company filters, bust cache, reload */
+    const resetSupplySiteList = () => {
+        window.dispatchEvent(new CustomEvent('siteListPrepareReset'));
+        setSiteSearchTerm('');
+        saveRealmSelection('');
+        window.dispatchEvent(new CustomEvent('supplySiteListReset'));
+    };
+
+    /** Placement list (Manager): same as Site */
+    const resetSupplyPlacementList = () => {
+        window.dispatchEvent(new CustomEvent('placementListPrepareReset'));
+        setPlacementSearchTerm('');
+        saveRealmSelection('');
+        window.dispatchEvent(new CustomEvent('supplyPlacementListReset'));
+    };
+
+    const isManagerSupplyListPage =
+        currentPageName === 'Company' || currentPageName === 'Site' || currentPageName === 'Placement';
+
+    const managerSupplyListRefreshAction =
+        currentPageName === 'Company'
+            ? resetSupplyCompanyList
+            : currentPageName === 'Site'
+              ? resetSupplySiteList
+              : resetSupplyPlacementList;
+
+    const managerSupplyListRefreshTitle =
+        currentPageName === 'Company'
+            ? 'Refresh — clears realm filter and search'
+            : 'Refresh — clears realm, company filter and search';
     
     // Note: timeRangeChanged is already dispatched in the useEffect above (lines 335-341)
     // when selectedTimeRange changes - no need for a duplicate dispatch here.
@@ -1388,8 +1436,8 @@ export default function Layout({ children, currentPageName }) {
                             </div>
                         )}
                         {currentPageName === 'Realm' && (
-                            <div className="mb-2">
-                                <div className="relative">
+                            <div className="mb-2 flex items-center gap-2">
+                                <div className="relative flex-1 min-w-0">
                                     <Input
                                         type="text"
                                         placeholder="Search Realms..."
@@ -1399,45 +1447,62 @@ export default function Layout({ children, currentPageName }) {
                                     />
                                     <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                                 </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-9 w-9 shrink-0"
+                                    title="Clear search and reload list"
+                                    aria-label="Clear search and reload list"
+                                    onClick={resetSupplyRealmList}
+                                >
+                                    <RefreshCw className="h-4 w-4" />
+                                </Button>
                             </div>
                         )}
-                        {currentPageName === 'Company' && (
-                            <div className="mb-2">
-                                <div className="relative">
-                                    <Input
-                                        type="text"
-                                        placeholder="Search Companies..."
-                                        value={companyPageSearchTerm}
-                                        onChange={(e) => setCompanyPageSearchTerm(e.target.value)}
-                                        className="w-full pl-10 h-9 text-sm"
-                                    />
-                                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                        {isManagerSupplyListPage && (
+                            <div className="mb-2 rounded-lg border border-slate-200 bg-slate-50/95 p-2.5 shadow-sm ring-1 ring-slate-200/60">
+                                <div className="flex items-center justify-between gap-2 mb-2">
+                                    <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                                        List filters
+                                    </span>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-7 shrink-0 gap-1 px-2 text-[11px] font-medium border-slate-200 bg-white text-[rgb(75,99,226)] hover:bg-[rgb(75,99,226)] hover:text-white hover:border-[rgb(75,99,226)]"
+                                        title={managerSupplyListRefreshTitle}
+                                        aria-label={managerSupplyListRefreshTitle}
+                                        onClick={managerSupplyListRefreshAction}
+                                    >
+                                        <RefreshCw className="h-3 w-3" />
+                                        Refresh
+                                    </Button>
                                 </div>
-                            </div>
-                        )}
-                        {currentPageName === 'Site' && (
-                            <div className="mb-2">
                                 <div className="relative">
                                     <Input
                                         type="text"
-                                        placeholder="Search Sites..."
-                                        value={siteSearchTerm}
-                                        onChange={(e) => setSiteSearchTerm(e.target.value)}
-                                        className="w-full pl-10 h-9 text-sm"
-                                    />
-                                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                                </div>
-                            </div>
-                        )}
-                        {currentPageName === 'Placement' && (
-                            <div className="mb-2">
-                                <div className="relative">
-                                    <Input
-                                        type="text"
-                                        placeholder="Search Placements..."
-                                        value={placementSearchTerm}
-                                        onChange={(e) => setPlacementSearchTerm(e.target.value)}
-                                        className="w-full pl-10 h-9 text-sm"
+                                        placeholder={
+                                            currentPageName === 'Company'
+                                                ? 'Search companies…'
+                                                : currentPageName === 'Site'
+                                                  ? 'Search sites…'
+                                                  : 'Search placements…'
+                                        }
+                                        value={
+                                            currentPageName === 'Company'
+                                                ? companyPageSearchTerm
+                                                : currentPageName === 'Site'
+                                                  ? siteSearchTerm
+                                                  : placementSearchTerm
+                                        }
+                                        onChange={(e) => {
+                                            const v = e.target.value;
+                                            if (currentPageName === 'Company') setCompanyPageSearchTerm(v);
+                                            else if (currentPageName === 'Site') setSiteSearchTerm(v);
+                                            else setPlacementSearchTerm(v);
+                                        }}
+                                        className="w-full pl-10 h-9 text-sm bg-white"
                                     />
                                     <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                                 </div>
@@ -1927,8 +1992,138 @@ export default function Layout({ children, currentPageName }) {
                                     </div>
                                 );
                             })()}
-                            {/* Realm Filter - only show on specific pages */}
-                            {showRealmFilter() && (
+                            {/* Manager supply lists: unified filter bar (Realm ± Company + Refresh) */}
+                            {showRealmFilter() && isManagerSupplyListPage && (
+                                <div
+                                    className={cn(
+                                        'flex flex-nowrap items-center gap-x-3 gap-y-0 rounded-lg border border-slate-200 bg-slate-50/95 px-3 py-2 shadow-sm',
+                                        'ring-1 ring-slate-200/60 max-w-[min(640px,46vw)] overflow-x-auto',
+                                        '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+                                    )}
+                                    role="group"
+                                    aria-label="List filters"
+                                >
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap shrink-0">
+                                            Realm
+                                        </span>
+                                        <Popover open={realmPopoverOpen} onOpenChange={setRealmPopoverOpen}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    role="combobox"
+                                                    aria-expanded={realmPopoverOpen}
+                                                    className="w-[min(180px,26vw)] justify-between h-8 text-xs bg-white border-slate-200"
+                                                >
+                                                    <span className="text-xs truncate">{truncateName(selectedRealmName, 18)}</span>
+                                                    <ChevronDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[180px] p-0">
+                                                <Command>
+                                                    <CommandInput
+                                                        placeholder="Search realm..."
+                                                        value={realmSearchTerm}
+                                                        onValueChange={setRealmSearchTerm}
+                                                        className="h-9"
+                                                    />
+                                                    <CommandList>
+                                                        <CommandEmpty>No realm found.</CommandEmpty>
+                                                        <CommandGroup>
+                                                            {filteredRealms.map((realm) => (
+                                                                <CommandItem
+                                                                    key={realm.Uid}
+                                                                    value={realm.Name}
+                                                                    onSelect={() => {
+                                                                        saveRealmSelection(realm.Uid);
+                                                                        setRealmPopoverOpen(false);
+                                                                        setRealmSearchTerm('');
+                                                                    }}
+                                                                    className="text-xs"
+                                                                >
+                                                                    {realm.Name}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+
+                                    {(currentPageName === 'Site' || currentPageName === 'Placement') && (
+                                        <>
+                                            <div className="hidden sm:block h-6 w-px bg-slate-200 shrink-0" aria-hidden />
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap shrink-0">
+                                                    Company
+                                                </span>
+                                                <Popover open={companyPopoverOpen} onOpenChange={setCompanyPopoverOpen}>
+                                                    <PopoverTrigger asChild>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            role="combobox"
+                                                            aria-expanded={companyPopoverOpen}
+                                                            className="w-[min(180px,26vw)] justify-between h-8 text-xs bg-white border-slate-200"
+                                                        >
+                                                            <span className="text-xs truncate">{truncateName(selectedCompanyName, 18)}</span>
+                                                            <ChevronDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
+                                                        </Button>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-[180px] p-0">
+                                                        <Command>
+                                                            <CommandInput
+                                                                placeholder="Search company..."
+                                                                value={companySearchTerm}
+                                                                onValueChange={setCompanySearchTerm}
+                                                                className="h-9"
+                                                            />
+                                                            <CommandList>
+                                                                <CommandEmpty>No company found.</CommandEmpty>
+                                                                <CommandGroup>
+                                                                    {filteredCompanies.map((company) => (
+                                                                        <CommandItem
+                                                                            key={company.Uid}
+                                                                            value={company.Name}
+                                                                            onSelect={() => {
+                                                                                saveCompanySelection(company.Uid);
+                                                                                setCompanyPopoverOpen(false);
+                                                                                setCompanySearchTerm('');
+                                                                            }}
+                                                                            className="text-xs"
+                                                                        >
+                                                                            {company.Name}
+                                                                        </CommandItem>
+                                                                    ))}
+                                                                </CommandGroup>
+                                                            </CommandList>
+                                                        </Command>
+                                                    </PopoverContent>
+                                                </Popover>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    <div className="hidden sm:block h-6 w-px bg-slate-200 shrink-0 sm:ml-0" aria-hidden />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8 shrink-0 gap-1.5 px-3 text-xs font-medium border-slate-200 bg-white text-[rgb(75,99,226)] hover:bg-[rgb(75,99,226)] hover:text-white hover:border-[rgb(75,99,226)]"
+                                        title={managerSupplyListRefreshTitle}
+                                        aria-label={managerSupplyListRefreshTitle}
+                                        onClick={managerSupplyListRefreshAction}
+                                    >
+                                        <RefreshCw className="h-3.5 w-3.5" />
+                                        Refresh
+                                    </Button>
+                                </div>
+                            )}
+
+                            {/* Realm only (Deal, dashboards, Site/Placement dashboards, etc.) */}
+                            {showRealmFilter() && !isManagerSupplyListPage && (
                                 <div className="flex items-center gap-2">
                                     <Label>Realm:</Label>
                                     <Popover open={realmPopoverOpen} onOpenChange={setRealmPopoverOpen}>
@@ -1946,8 +2141,8 @@ export default function Layout({ children, currentPageName }) {
                                         </PopoverTrigger>
                                         <PopoverContent className="w-[180px] p-0">
                                             <Command>
-                                                <CommandInput 
-                                                    placeholder="Search realm..." 
+                                                <CommandInput
+                                                    placeholder="Search realm..."
                                                     value={realmSearchTerm}
                                                     onValueChange={setRealmSearchTerm}
                                                     className="h-9"
@@ -1976,10 +2171,9 @@ export default function Layout({ children, currentPageName }) {
                                     </Popover>
                                 </div>
                             )}
-                            
-                            {/* Company Filter (for Site, Placement, SiteDashboard and PlacementDashboard) */}
-                            {(currentPageName === 'Site' || currentPageName === 'Placement' || 
-                              currentPageName === 'SiteDashboard' || currentPageName === 'PlacementDashboard') && (
+
+                            {/* Company Filter (dashboards only — list pages use filter bar above) */}
+                            {(currentPageName === 'SiteDashboard' || currentPageName === 'PlacementDashboard') && (
                                 <div className="flex items-center gap-2">
                                     <Label>Company:</Label>
                                     <Popover open={companyPopoverOpen} onOpenChange={setCompanyPopoverOpen}>
@@ -1997,8 +2191,8 @@ export default function Layout({ children, currentPageName }) {
                                         </PopoverTrigger>
                                         <PopoverContent className="w-[180px] p-0">
                                             <Command>
-                                                <CommandInput 
-                                                    placeholder="Search company..." 
+                                                <CommandInput
+                                                    placeholder="Search company..."
                                                     value={companySearchTerm}
                                                     onValueChange={setCompanySearchTerm}
                                                     className="h-9"
@@ -2091,7 +2285,8 @@ export default function Layout({ children, currentPageName }) {
                               currentPageName === 'Company' || currentPageName === 'Site' || 
                               currentPageName === 'Placement' || currentPageName === 'Deal' ||
                               currentPageName === 'UserSyncManagement' || currentPageName === 'BlockedCreativeManagement' || currentPageName === 'UserManagement') && (
-                                <div className="relative w-full max-w-md">
+                                <div className={cn('w-full max-w-md flex items-center gap-2', currentPageName === 'Realm' && 'max-w-lg')}>
+                                    <div className="relative flex-1 min-w-0">
                                     <Input
                                         type="text"
                                         placeholder={
@@ -2151,6 +2346,20 @@ export default function Layout({ children, currentPageName }) {
                                         className="w-full pl-10 h-9 text-sm"
                                     />
                                     <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                                    </div>
+                                    {currentPageName === 'Realm' && (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-9 w-9 shrink-0"
+                                            title="Clear search and reload list"
+                                            aria-label="Clear search and reload list"
+                                            onClick={resetSupplyRealmList}
+                                        >
+                                            <RefreshCw className="h-4 w-4" />
+                                        </Button>
+                                    )}
                                 </div>
                             )}
                         </div>
