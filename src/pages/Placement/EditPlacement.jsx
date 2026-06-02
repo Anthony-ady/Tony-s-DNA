@@ -2405,19 +2405,6 @@ const EditPlacement = () => {
                     )}
                   </div>
 
-                  <Separator />
-
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-slate-900">System Information</h3>
-                    <div className="space-y-2">
-                      <Label>Lock Version</Label>
-                      <Input
-                        value={placementData.LockVersion || 0}
-                        disabled
-                        className="bg-slate-50"
-                      />
-                    </div>
-                  </div>
               </CardContent>
             </Card>
           )}
