@@ -4,7 +4,7 @@
  * Uses the DashboardTemplate to display DSP analytics
  */
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import DashboardTemplate from "../Dashboard/DashboardTemplate";
 import AnalyticsFilterMenu from "@/components/AnalyticsFilterMenu";
@@ -19,6 +19,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsToolti
 import { EntityPerformanceCard } from "@/components/dashboard/EntityPerformanceCard";
 import { API_ENDPOINTS } from "@/config/api";
 import { formatCurrency as formatCurrencyNoM, formatCurrencyDetailed, formatCurrencyRaw, formatLargeNumber, formatPercentage } from "@/utils/formatters";
+import { buildAdserverHourlySummaryPayload, dateRangeToDruidInterval, processEntityHourlySparkFromRaw } from "@/utils/hourlyProjections";
 import { Badge } from "@/components/ui/badge";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -2455,6 +2456,11 @@ export default function DSPDashboard() {
     };
   };
 
+  const buildHourlySummaryPayload = useCallback((startDate, endDate) => {
+    const { begin, end } = dateRangeToDruidInterval(startDate, endDate);
+    return buildAdserverHourlySummaryPayload(begin, end);
+  }, []);
+
   // Get entity ID
   const getDSPId = (item) => item.Partner;
 
@@ -2573,104 +2579,7 @@ export default function DSPDashboard() {
       
       // Process time-series data
       if (effectiveMode === 'hourly') {
-        // Filter and sort data
-        const filteredData = rawData.filter(item => 
-          item.PricePublisher !== undefined || item.PriceAdvertiser_PublisherSide !== undefined
-        );
-        const sortedData = filteredData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-        
-        // Group data by day (using UTC+0 timezone)
-        const dataByDay = {};
-        sortedData.forEach((item) => {
-          let cleanTimestamp = item.timestamp;
-          if (typeof cleanTimestamp === 'string') {
-            cleanTimestamp = cleanTimestamp.replace(/\.\d{6}/, '');
-            if (!cleanTimestamp.endsWith('Z') && !cleanTimestamp.includes('+')) {
-              cleanTimestamp += 'Z';
-            }
-          }
-          
-          const date = new Date(cleanTimestamp);
-          const adjustedDate = new Date(date.getTime());
-          const dayKey = adjustedDate.toISOString().slice(0, 10);
-          
-          if (!dataByDay[dayKey]) {
-            dataByDay[dayKey] = [];
-          }
-          
-          dataByDay[dayKey].push({
-            ...item,
-            cleanDate: adjustedDate,
-            hour: adjustedDate.getUTCHours()
-          });
-        });
-        
-        // Create comparison rows: Today vs Yesterday hour by hour
-        const processedData = [];
-        const today = new Date();
-        const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-        const adjustedToday = new Date(today.getTime());
-        const adjustedYesterday = new Date(yesterday.getTime());
-        const todayData = dataByDay[adjustedToday.toISOString().slice(0, 10)] || [];
-        const yesterdayData = dataByDay[adjustedYesterday.toISOString().slice(0, 10)] || [];
-        
-        const yesterdayMap = {};
-        yesterdayData.forEach(item => {
-          yesterdayMap[item.hour] = item;
-        });
-        
-        todayData.forEach(todayItem => {
-          const yesterdayItem = yesterdayMap[todayItem.hour];
-          const clicks = todayItem.CLICK ?? todayItem.Click ?? 0;
-          const impressions = todayItem.IMPRESSION ?? todayItem.Impression ?? 0;
-          const ctr = impressions ? (clicks / impressions) * 100 : 0;
-          const visibleImpressions = todayItem.network_operations_visible_impressions ?? 0;
-          const viewabilityRate = typeof todayItem.network_operations_viewability_rate === 'number'
-            ? todayItem.network_operations_viewability_rate * 100
-            : 0;
-
-          const yesterdayClicks = yesterdayItem ? (yesterdayItem.CLICK ?? yesterdayItem.Click ?? 0) : 0;
-          const yesterdayImpressions = yesterdayItem ? (yesterdayItem.IMPRESSION ?? yesterdayItem.Impression ?? 0) : 0;
-          const yesterdayCtr = yesterdayImpressions ? (yesterdayClicks / yesterdayImpressions) * 100 : 0;
-          const yesterdayVisibleImpressions = yesterdayItem?.network_operations_visible_impressions ?? 0;
-          const yesterdayViewabilityRate = typeof yesterdayItem?.network_operations_viewability_rate === 'number'
-            ? yesterdayItem.network_operations_viewability_rate * 100
-            : 0;
-          
-          // Format label with hour
-          const label = todayItem.cleanDate.toLocaleString('fr-FR', {
-            day: '2-digit',
-            month: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-          });
-          
-          processedData.push({
-            day: label,
-            entityRevenue: todayItem.PriceAdvertiser_PublisherSide || 0,
-            publisherCost: todayItem.PricePublisher || 0,
-            margin: (todayItem.PriceAdvertiser_PublisherSide || 0) - (todayItem.PricePublisher || 0),
-            click: clicks,
-            impression: impressions,
-            visibleImpressions,
-            viewabilityRate,
-            ctr,
-            // Include yesterday data for comparison
-            yesterdayData: yesterdayItem ? {
-              entityRevenue: yesterdayItem.PriceAdvertiser_PublisherSide || 0,
-              publisherCost: yesterdayItem.PricePublisher || 0,
-              margin: (yesterdayItem.PriceAdvertiser_PublisherSide || 0) - (yesterdayItem.PricePublisher || 0),
-              click: yesterdayClicks,
-              impression: yesterdayImpressions,
-              visibleImpressions: yesterdayVisibleImpressions,
-              viewabilityRate: yesterdayViewabilityRate,
-              ctr: yesterdayCtr
-            } : null,
-            hour: todayItem.hour
-          });
-        });
-        
-        return processedData;
+        return processEntityHourlySparkFromRaw(rawData);
       } else {
         // Daily mode: process with trends compared to previous day
         const normalized = rawData.map((item) => ({
@@ -2757,6 +2666,7 @@ export default function DSPDashboard() {
           entityNamePlural="DSPs"
           apiEndpoint={API_ENDPOINTS.DRUID_SEARCH}
           topEntitiesPayload={topDSPPayload}
+          buildHourlySummaryPayload={buildHourlySummaryPayload}
           processTopEntitiesResponse={processTopDSPsResponse}
           getEntityId={getDSPId}
           getEntityName={getDSPName}

@@ -32,6 +32,8 @@ import AnalyticsFilterMenu from "@/components/AnalyticsFilterMenu";
 import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import HourlyAnalyticsSummaryCards from '@/components/analytics/HourlyAnalyticsSummaryCards';
+import { prepareHourlyChartData } from '@/utils/hourlyProjections';
 
 /**
  * Right-panel adserver_stats queries: in real-time (hourly) mode use the current UTC day
@@ -3536,80 +3538,24 @@ export default function AnalyticsTemplate({
     return () => window.removeEventListener('druidCacheCleared', onDruidCacheCleared);
   }, []);
 
-  // Default summary cards renderer matching DashboardTemplate colors
-  const defaultRenderSummaryCards = (summaryStatsArg, viewModeArg) => {
-    if (viewModeArg !== 'hourly') {
-      return null;
-    }
-    return (
-      <>
-        <Card className="border-slate-200 shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className={TAILWIND_CLASSES.formSectionLabel}>DSP Revenue</p>
-                <p className="text-lg lg:text-xl font-bold text-green-600">{formatCurrency(summaryStatsArg?.totalDSP || summaryStatsArg?.entityRevenue || summaryStatsArg?.totalDspRevenue || 0)}</p>
-              </div>
-              <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-                <DollarSign className="w-4 h-4 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-200 shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className={TAILWIND_CLASSES.formSectionLabel}>Publisher Costs</p>
-                <p className="text-lg lg:text-xl font-bold text-red-600">{formatCurrency(summaryStatsArg?.totalPublisher || summaryStatsArg?.publisherCosts || summaryStatsArg?.totalPublisherRevenue || 0)}</p>
-              </div>
-              <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-4 h-4 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-200 shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className={TAILWIND_CLASSES.formSectionLabel}>Margin</p>
-                <p className="text-lg lg:text-xl font-bold" style={{ color: 'rgb(79, 70, 229)' }}>{formatCurrency((summaryStatsArg?.totalMargin ?? summaryStatsArg?.margin ?? summaryStatsArg?.totalMargin) || 0)}</p>
-              </div>
-              <div className="w-8 h-8 bg-gradient-to-br from-[rgb(75,99,226)] to-purple-600 rounded-lg flex items-center justify-center">
-                <BarChart3 className="w-4 h-4 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-200 shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className={TAILWIND_CLASSES.formSectionLabel}>Avg Margin %</p>
-                <p className="text-lg lg:text-xl font-bold text-orange-600">{(summaryStatsArg?.marginPercentage ?? summaryStatsArg?.avgMarginPercentage ?? summaryStatsArg?.avgMarginPercentage ?? 0).toFixed ? (summaryStatsArg?.marginPercentage ?? summaryStatsArg?.avgMarginPercentage ?? summaryStatsArg?.avgMarginPercentage ?? 0).toFixed(2) : (summaryStatsArg?.marginPercentage ?? summaryStatsArg?.avgMarginPercentage ?? summaryStatsArg?.avgMarginPercentage ?? 0)}%</p>
-              </div>
-              <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
-                <Calendar className="w-4 h-4 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </>
-    );
-  };
+  const defaultRenderSummaryCards = (summaryStatsArg, viewModeArg, formatCurrencyFn) => (
+    <HourlyAnalyticsSummaryCards
+      summaryStats={summaryStatsArg}
+      viewMode={viewModeArg}
+      formatCurrencyFn={formatCurrencyFn || formatCurrency}
+    />
+  );
 
   const defaultRenderChart = (analyticsDataArg, viewModeArg, networkOperationsDataArg) => {
     if (viewModeArg === 'hourly') {
-      const xAxisKey = analyticsDataArg?.[0]?.hourOnly ? 'hourOnly' : 'formattedDate';
-      const hasYesterday = analyticsDataArg.some((item) => item.yesterdayDspRevenue !== undefined);
+      const chartData = prepareHourlyChartData(analyticsDataArg);
+      const xAxisKey = chartData?.[0]?.hourOnly ? 'hourOnly' : 'formattedDate';
+      const hasYesterday = chartData.some((item) => item.yesterdayDspRevenue != null);
+      const hasProjected = chartData.some((item) => item.isProjected);
       return (
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={analyticsDataArg}>
+            <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
                 dataKey={xAxisKey} 
@@ -3632,24 +3578,47 @@ export default function AnalyticsTemplate({
                   padding: '10px',
                   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
                 }}
-                formatter={(value, name, props) => [
-                  formatCurrency(value), 
-                  props.dataKey === 'PriceAdvertiser_PublisherSide' ? 'DSP Revenue' : 
-                  props.dataKey === 'yesterdayDspRevenue' ? 'Yesterday DSP Revenue' : name
-                ]}
+                formatter={(value, name, item) => {
+                  if (item?.dataKey === 'bridgeDsp' || name === 'bridgeDsp') {
+                    return ['', ''];
+                  }
+                  if (value == null || Number.isNaN(Number(value))) {
+                    return ['', ''];
+                  }
+                  return [
+                    formatCurrency(value),
+                    name === 'dspRevenueTodayReal' ? 'DSP Revenue' :
+                    name === 'dspRevenueTodayProjected' ? 'DSP Revenue (estim.)' :
+                    name === 'yesterdayDspRevenue' ? 'Yesterday DSP Revenue' : name
+                  ];
+                }}
                 labelFormatter={(label) => `Time: ${label}`}
               />
               <Legend onClick={(e) => toggleSeries('hourly_revenue', e.dataKey)} wrapperStyle={{ cursor: 'pointer' }} />
-              <Line 
-                type="monotone" 
-                dataKey="PriceAdvertiser_PublisherSide" 
-                stroke="#10b981" 
+              <Line
+                type="monotone"
+                dataKey="dspRevenueTodayReal"
+                stroke="#10b981"
                 strokeWidth={2}
+                connectNulls
                 name="DSP Revenue"
                 dot={false}
                 activeDot={false}
-                hide={isSeriesHidden('hourly_revenue', 'PriceAdvertiser_PublisherSide')}
+                hide={isSeriesHidden('hourly_revenue', 'dspRevenueTodayReal')}
               />
+              {hasProjected && (
+                <Line
+                  type="monotone"
+                  dataKey="dspRevenueTodayProjected"
+                  stroke="#2563eb"
+                  strokeWidth={2}
+                  connectNulls
+                  name="DSP Revenue (estim.)"
+                  dot={false}
+                  activeDot={false}
+                  hide={isSeriesHidden('hourly_revenue', 'dspRevenueTodayProjected')}
+                />
+              )}
               {hasYesterday && (
                 <Line 
                   type="monotone" 
@@ -3657,10 +3626,23 @@ export default function AnalyticsTemplate({
                   stroke="#6b7280" 
                   strokeWidth={2}
                   strokeDasharray="5 5"
+                  connectNulls
                   name="Yesterday DSP Revenue"
                   dot={false}
                   activeDot={false}
                   hide={isSeriesHidden('hourly_revenue', 'yesterdayDspRevenue')}
+                />
+              )}
+              {hasProjected && (
+                <Line
+                  type="linear"
+                  dataKey="bridgeDsp"
+                  stroke="#14b8a6"
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={false}
+                  legendType="none"
+                  isAnimationActive={false}
                 />
               )}
             </LineChart>
@@ -6341,7 +6323,7 @@ export default function AnalyticsTemplate({
 
         {/* Summary Cards */}
         {summaryStats && !loading && summaryCardsContent && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="mb-8">
             {summaryCardsContent}
           </div>
         )}

@@ -1,6 +1,7 @@
 import React from "react";
 import { DollarSign, TrendingUp, BarChart3, ExternalLink } from "lucide-react";
 import { enqueueSparklineFetch } from "@/utils/sparklineFetchQueue";
+import { computeHourlySummaryStats } from "@/utils/hourlyProjections";
 import {
   LineChart,
   Line,
@@ -109,22 +110,26 @@ export function EntityPerformanceCard({
           fetchDailyData(entityId, entityName, startDate, endDate)
         );
         if (cancelled || requestId !== requestIdRef.current) return;
-        const chart = (daily || []).map((d) => ({
+        const mapped = (daily || []).map((d) => ({
           dateLabel: d.day,
-          revenue: d.entityRevenue || 0,
-          costs: d.publisherCost || 0,
+          entityRevenue: d.entityRevenue || 0,
+          publisherCost: d.publisherCost || 0,
+          isProjected: !!d.isProjected,
+          revenue: d.isProjected ? null : (d.entityRevenue || 0),
+          revenueProjected: d.isProjected ? (d.entityRevenue || 0) : null,
+          costs: d.isProjected ? null : (d.publisherCost || 0),
+          costsProjected: d.isProjected ? (d.publisherCost || 0) : null,
           impressions: d.impression ?? d.impressions ?? 0,
           visibleImpressions: d.visibleImpressions ?? 0,
           ctr: typeof d.ctr === "number" ? d.ctr : 0,
           viewability: typeof d.viewabilityRate === "number" ? d.viewabilityRate : 0,
-          // Include yesterday revenue & costs for hourly comparison
           yesterdayRevenue: d.yesterdayData?.entityRevenue ?? null,
           yesterdayCosts: d.yesterdayData?.publisherCost ?? null,
-          // Include yesterday impressions & CTR for hourly comparison (SalesDashboard)
           yesterdayImpressions: d.yesterdayData?.impression ?? null,
           yesterdayVisibleImpressions: d.yesterdayData?.visibleImpressions ?? null,
           yesterdayCtr: d.yesterdayData?.ctr ?? null,
         }));
+        const chart = viewMode === 'hourly' ? applyHourlySparkBridges(mapped) : mapped;
         setSparkData(chart);
         setCache((prev) => ({
           ...prev,
@@ -176,33 +181,75 @@ export function EntityPerformanceCard({
     return value.replace(/M\b/, "");
   };
 
+  /** Card display: no decimals when amount is >= $100 (raw value / 1M). */
+  const formatDisplayCurrency = (value) => {
+    const dollars = (Number(value) || 0) / 1_000_000;
+    if (Math.abs(dollars) >= 100) {
+      const rounded = Math.round(dollars);
+      const formatted = Math.abs(rounded)
+        .toString()
+        .replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+      return rounded < 0 ? `-$${formatted}` : `$${formatted}`;
+    }
+    return stripM(formatCurrency(value));
+  };
+
+  const formatPct = (pct) => {
+    const n = parseFloat(pct);
+    if (Number.isNaN(n)) return "—";
+    return `${n >= 0 ? "+" : ""}${pct}%`;
+  };
+
+  /** Bridge real and projected sparkline series so blue lines connect without a gap. */
+  const applyHourlySparkBridges = (rows) => {
+    if (!rows?.length) return rows;
+    const chart = rows.map((row) => ({ ...row }));
+    for (let i = 0; i < chart.length - 1; i += 1) {
+      if (!chart[i].isProjected && chart[i + 1].isProjected) {
+        chart[i].revenueProjected = chart[i].revenue ?? chart[i].entityRevenue ?? 0;
+        chart[i].costsProjected = chart[i].costs ?? chart[i].publisherCost ?? 0;
+      }
+    }
+    return chart;
+  };
+
   // Calculate today/yesterday totals for hourly mode
   const hourlyStats = React.useMemo(() => {
     if (viewMode !== 'hourly' || !sparkData || sparkData.length === 0) {
       return null;
     }
 
-    const todayRevenue = sparkData.reduce((sum, d) => sum + (d.revenue || 0), 0);
+    const rowsForStats = sparkData.map((d) => ({
+      PriceAdvertiser_PublisherSide: d.entityRevenue ?? ((d.revenue || 0) + (d.revenueProjected || 0)),
+      PricePublisher: d.publisherCost ?? ((d.costs || 0) + (d.costsProjected || 0)),
+      isProjected: d.isProjected,
+    }));
+    const { real, estimated } = computeHourlySummaryStats(rowsForStats);
+
     const yesterdayRevenue = sparkData.reduce((sum, d) => sum + (d.yesterdayRevenue || 0), 0);
-    
-    const todayCosts = sparkData.reduce((sum, d) => sum + (d.costs || 0), 0);
     const yesterdayCosts = sparkData.reduce((sum, d) => sum + (d.yesterdayCosts || 0), 0);
-    
-    const todayMargin = todayRevenue - todayCosts;
     const yesterdayMargin = yesterdayRevenue - yesterdayCosts;
-    
-    const todayMarginPct = todayRevenue > 0 ? ((todayMargin / todayRevenue) * 100).toFixed(2) : "0.00";
     const yesterdayMarginPct = yesterdayRevenue > 0 ? ((yesterdayMargin / yesterdayRevenue) * 100).toFixed(2) : "0.00";
 
+    const todayMarginPct = real.totalDSP > 0 ? ((real.totalMargin / real.totalDSP) * 100).toFixed(2) : "0.00";
+    const estimatedMarginPct = estimated && estimated.totalDSP > 0
+      ? ((estimated.totalMargin / estimated.totalDSP) * 100).toFixed(2)
+      : null;
+
     return {
-      todayRevenue,
+      todayRevenue: real.totalDSP,
       yesterdayRevenue,
-      todayCosts,
+      todayCosts: real.totalPublisher,
       yesterdayCosts,
-      todayMargin,
+      todayMargin: real.totalMargin,
       yesterdayMargin,
       todayMarginPct,
       yesterdayMarginPct,
+      estimatedRevenue: estimated?.totalDSP ?? null,
+      estimatedCosts: estimated?.totalPublisher ?? null,
+      estimatedMargin: estimated?.totalMargin ?? null,
+      estimatedMarginPct,
+      hasEstimated: estimated != null,
     };
   }, [viewMode, sparkData]);
 
@@ -262,7 +309,7 @@ export function EntityPerformanceCard({
   return (
     <div
       ref={cardRootRef}
-      className="relative flex flex-col justify-between rounded-xl border border-slate-200 bg-white text-slate-900 p-5 shadow-sm cursor-pointer hover:border-[rgb(30,47,130)] hover:shadow-md transition"
+      className="relative flex flex-col justify-between rounded-xl border border-slate-200 bg-white text-slate-900 p-5 shadow-sm cursor-pointer hover:border-[rgb(30,47,130)] hover:shadow-md transition min-w-0 overflow-hidden"
       style={{ position: "relative", zIndex: isHovered ? 100 : 1 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -276,13 +323,13 @@ export function EntityPerformanceCard({
         }
       }}
     >
-      <div className="flex items-start justify-between mb-4">
-        <div>
-          <div className="text-xs font-semibold truncate max-w-[220px] text-[rgb(30,47,130)]">
+      <div className="flex items-start justify-between gap-2 mb-4 min-w-0">
+        <div className="min-w-0 flex-1">
+          <div className="text-xs font-semibold truncate text-[rgb(30,47,130)]">
             {entityName || "Unknown"}
           </div>
         </div>
-        <div className="flex flex-col items-end gap-1">
+        <div className="flex flex-col items-end gap-1 shrink-0">
           {getDetailUrl && (
             <button
               type="button"
@@ -294,22 +341,7 @@ export function EntityPerformanceCard({
               <ExternalLink className="w-3.5 h-3.5" />
             </button>
           )}
-          {viewMode === 'hourly' && hourlyStats ? (
-            <>
-              <div className="text-[9px] text-slate-600 mb-1">Avg Margin %</div>
-              <div
-                className={`px-2 py-1 rounded-full text-[10px] font-semibold ${
-                  parseFloat(hourlyStats.todayMarginPct) >= 0 ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
-                }`}
-              >
-                {parseFloat(hourlyStats.todayMarginPct) >= 0 ? "+" : ""}
-                {hourlyStats.todayMarginPct}%
-              </div>
-              <div className="text-[9px] text-slate-500 mt-1">
-                Yesterday: {parseFloat(hourlyStats.yesterdayMarginPct) >= 0 ? "+" : ""}{hourlyStats.yesterdayMarginPct}%
-              </div>
-            </>
-          ) : (
+          {viewMode !== "hourly" && (
             <div
               className={`px-2 py-1 rounded-full text-[10px] font-semibold ${
                 isPositive ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
@@ -322,7 +354,102 @@ export function EntityPerformanceCard({
         </div>
       </div>
 
-      {/* Revenue / Publisher Costs / Margin on same line */}
+      {/* Revenue / Publisher Costs / Margin */}
+      {viewMode === "hourly" && hourlyStats ? (
+        <>
+          <div className="mb-2 rounded-md border border-slate-100 bg-slate-50/60 px-2 py-1.5 min-w-0">
+            <div className="text-[9px] font-medium text-slate-500 mb-1.5">Avg Margin %</div>
+            <div className="grid grid-cols-3 gap-1 text-[10px]">
+              <div className="text-center min-w-0">
+                <div className="text-[9px] text-slate-400 mb-0.5">Yesterday</div>
+                <div className="tabular-nums text-slate-600">{formatPct(hourlyStats.yesterdayMarginPct)}</div>
+              </div>
+              <div className="text-center min-w-0">
+                <div className="text-[9px] text-slate-600 font-medium mb-0.5">Real time</div>
+                <div
+                  className={`tabular-nums font-semibold ${
+                    parseFloat(hourlyStats.todayMarginPct) >= 0 ? "text-emerald-700" : "text-rose-600"
+                  }`}
+                >
+                  {formatPct(hourlyStats.todayMarginPct)}
+                </div>
+              </div>
+              <div className="text-center min-w-0">
+                <div className="text-[9px] text-blue-600 mb-0.5">Est. day</div>
+                <div className="tabular-nums text-blue-600 font-medium">
+                  {hourlyStats.hasEstimated && hourlyStats.estimatedMarginPct != null
+                    ? formatPct(hourlyStats.estimatedMarginPct)
+                    : "—"}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-md border border-slate-100 bg-slate-50/60 p-2 min-w-0">
+          <div className="grid grid-cols-[minmax(4rem,auto)_1fr_1fr_1fr] gap-x-2 gap-y-1.5 text-[10px]">
+            <div />
+            <div className="flex items-center justify-end gap-1 font-medium text-slate-600 min-w-0">
+              <DollarSign className="w-2.5 h-2.5 text-emerald-500 shrink-0" />
+              <span className="truncate">Revenue</span>
+            </div>
+            <div className="flex items-center justify-end gap-1 font-medium text-slate-600 min-w-0">
+              <TrendingUp className="w-2.5 h-2.5 text-red-500 shrink-0" />
+              <span className="truncate">Costs</span>
+            </div>
+            <div className="flex items-center justify-end gap-1 font-medium text-slate-600 min-w-0">
+              <BarChart3 className="w-2.5 h-2.5 shrink-0" style={{ color: "rgb(79, 70, 229)" }} />
+              <span className="truncate">Margin</span>
+            </div>
+
+            <div className="text-slate-400 self-center">Yesterday</div>
+            <div className="text-right text-emerald-400 tabular-nums">
+              {formatDisplayCurrency(hourlyStats.yesterdayRevenue)}
+            </div>
+            <div className="text-right text-red-400 tabular-nums">
+              {formatDisplayCurrency(hourlyStats.yesterdayCosts)}
+            </div>
+            <div className="text-right text-indigo-400 tabular-nums">
+              {formatDisplayCurrency(hourlyStats.yesterdayMargin)}
+            </div>
+
+            <div className="text-slate-600 font-semibold self-center">Real time</div>
+            <div className="text-right font-semibold text-emerald-600 tabular-nums">
+              {formatDisplayCurrency(hourlyStats.todayRevenue)}
+            </div>
+            <div className="text-right font-semibold text-red-500 tabular-nums">
+              {formatDisplayCurrency(hourlyStats.todayCosts)}
+            </div>
+            <div
+              className="text-right font-semibold tabular-nums"
+              style={{ color: "rgb(79, 70, 229)" }}
+            >
+              {formatDisplayCurrency(hourlyStats.todayMargin)}
+            </div>
+
+            {hourlyStats.hasEstimated && (
+              <>
+                <div className="text-blue-600 font-medium self-center">Est. day</div>
+                <div className="text-right text-blue-600 font-medium tabular-nums">
+                  {hourlyStats.estimatedRevenue != null
+                    ? formatDisplayCurrency(hourlyStats.estimatedRevenue)
+                    : "—"}
+                </div>
+                <div className="text-right text-blue-600 font-medium tabular-nums">
+                  {hourlyStats.estimatedCosts != null
+                    ? formatDisplayCurrency(hourlyStats.estimatedCosts)
+                    : "—"}
+                </div>
+                <div className="text-right text-blue-600 font-medium tabular-nums">
+                  {hourlyStats.estimatedMargin != null
+                    ? formatDisplayCurrency(hourlyStats.estimatedMargin)
+                    : "—"}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+        </>
+      ) : (
       <div className="mt-2 flex items-start justify-between gap-4">
         {/* Revenue */}
         <div className="flex-1">
@@ -330,20 +457,9 @@ export function EntityPerformanceCard({
             <DollarSign className="w-2.5 h-2.5 text-emerald-500" />
             <span>DSP Revenue</span>
           </div>
-          {viewMode === 'hourly' && hourlyStats ? (
-            <div className="text-[10px]">
-              <div className="font-semibold text-emerald-600">
-                {stripM(formatCurrency(hourlyStats.todayRevenue))}
-              </div>
-              <div className="text-emerald-600 opacity-70 mt-0.5 text-[9px]">
-                Yesterday: {stripM(formatCurrency(hourlyStats.yesterdayRevenue))}
-              </div>
-            </div>
-          ) : (
-            <div className="text-[10px] font-semibold text-emerald-600">
-              {stripM(formatCurrency(revenue))}
-            </div>
-          )}
+          <div className="text-[10px] font-semibold text-emerald-600">
+            {formatDisplayCurrency(revenue)}
+          </div>
         </div>
 
         {/* Publisher Costs */}
@@ -352,20 +468,9 @@ export function EntityPerformanceCard({
             <TrendingUp className="w-2.5 h-2.5 text-red-500" />
             <span>Publisher Costs</span>
           </div>
-          {viewMode === 'hourly' && hourlyStats ? (
-            <div className="text-[10px]">
-              <div className="font-semibold text-red-500">
-                {stripM(formatCurrency(hourlyStats.todayCosts))}
-              </div>
-              <div className="text-red-500 opacity-70 mt-0.5 text-[9px]">
-                Yesterday: {stripM(formatCurrency(hourlyStats.yesterdayCosts))}
-              </div>
-            </div>
-          ) : (
-            <div className="text-[10px] font-semibold text-red-500">
-              {stripM(formatCurrency(publisherCost))}
-            </div>
-          )}
+          <div className="text-[10px] font-semibold text-red-500">
+            {formatDisplayCurrency(publisherCost)}
+          </div>
         </div>
 
         {/* Margin */}
@@ -374,25 +479,18 @@ export function EntityPerformanceCard({
             <BarChart3 className="w-2.5 h-2.5" style={{ color: "rgb(79, 70, 229)" }} />
             <span>Margin</span>
           </div>
-          {viewMode === 'hourly' && hourlyStats ? (
-            <div className="text-[10px]">
-              <div className="font-medium" style={{ color: "rgb(79, 70, 229)" }}>
-                {stripM(formatCurrency(hourlyStats.todayMargin))}
-              </div>
-              <div className="opacity-70 mt-0.5 text-[9px]" style={{ color: "rgb(79, 70, 229)" }}>
-                Yesterday: {stripM(formatCurrency(hourlyStats.yesterdayMargin))}
-              </div>
-            </div>
-          ) : (
-            <div className="text-[10px] font-medium" style={{ color: "rgb(79, 70, 229)" }}>
-              {stripM(formatCurrency(margin))}
-            </div>
-          )}
+          <div className="text-[10px] font-medium" style={{ color: "rgb(79, 70, 229)" }}>
+            {formatDisplayCurrency(margin)}
+          </div>
         </div>
       </div>
+      )}
 
       {/* Mini daily/hourly curve: Revenue & Publisher Costs (+ yesterday in hourly) */}
-      <div className="mt-4 pt-3 border-top border-slate-200 h-16 w-full relative" style={{ zIndex: 0 }}>
+      <div
+        className={`mt-4 pt-3 border-top border-slate-200 w-full relative ${viewMode === "hourly" ? "h-36" : "h-16"}`}
+        style={{ zIndex: 0 }}
+      >
         {loadingSpark || sparkData.length === 0 ? (
           <div className="h-full flex items-center justify-center text-[9px] text-slate-400">
             {loadingSpark ? (
@@ -416,10 +514,14 @@ export function EntityPerformanceCard({
                   stripM(formatCurrencyDetailed(value)),
                   name === "revenue"
                     ? (viewMode === "hourly" ? "DSP Revenue" : "Revenue")
+                    : name === "revenueProjected"
+                    ? "DSP Revenue (estim.)"
                     : name === "yesterdayRevenue"
                     ? "Yesterday DSP Revenue"
                     : name === "costs"
                     ? "Publisher Costs"
+                    : name === "costsProjected"
+                    ? "Publisher Costs (estim.)"
                     : name === "yesterdayCosts"
                     ? "Yesterday Publisher Costs"
                     : name,
@@ -448,9 +550,21 @@ export function EntityPerformanceCard({
                 dataKey="revenue"
                 stroke="#22c55e"
                 strokeWidth={2}
+                connectNulls={false}
                 dot={false}
                 activeDot={{ r: 3 }}
               />
+              {viewMode === "hourly" && sparkData.some((d) => d.revenueProjected != null) && (
+                <Line
+                  type="monotone"
+                  dataKey="revenueProjected"
+                  stroke="#2563eb"
+                  strokeWidth={2}
+                  connectNulls
+                  dot={false}
+                  activeDot={{ r: 3 }}
+                />
+              )}
               {/* Yesterday DSP revenue (hourly mode only) */}
               {viewMode === "hourly" && sparkData.some((d) => d.yesterdayRevenue !== null) && (
                 <Line
@@ -470,9 +584,21 @@ export function EntityPerformanceCard({
                 dataKey="costs"
                 stroke="#ef4444"
                 strokeWidth={2}
+                connectNulls={false}
                 dot={false}
                 activeDot={{ r: 3 }}
               />
+              {viewMode === "hourly" && sparkData.some((d) => d.costsProjected != null) && (
+                <Line
+                  type="monotone"
+                  dataKey="costsProjected"
+                  stroke="#2563eb"
+                  strokeWidth={2}
+                  connectNulls
+                  dot={false}
+                  activeDot={{ r: 3 }}
+                />
+              )}
               {/* Yesterday publisher costs (hourly mode only) */}
               {viewMode === "hourly" && sparkData.some((d) => d.yesterdayCosts !== null) && (
                 <Line
@@ -491,8 +617,8 @@ export function EntityPerformanceCard({
         )}
       </div>
 
-      {/* Optional extra charts for Impressions and CTR (SalesDashboard) */}
-      {showImpressionsAndCtr && !loadingSpark && sparkData.length > 0 && (
+      {/* Optional extra charts for Impressions and CTR (daily mode only) */}
+      {showImpressionsAndCtr && viewMode !== 'hourly' && !loadingSpark && sparkData.length > 0 && (
         <>
           {/* Impressions chart */}
           <div className="mt-3 w-full">
@@ -635,8 +761,8 @@ export function EntityPerformanceCard({
         </>
       )}
 
-      {/* Optional viewability rate chart (Sales/Deal/Realm dashboards) */}
-      {showImpressionsAndCtr && !loadingSpark && sparkData.length > 0 && (
+      {/* Optional viewability rate chart (daily mode only) */}
+      {showImpressionsAndCtr && viewMode !== 'hourly' && !loadingSpark && sparkData.length > 0 && (
         <div className="mt-3 w-full">
           <div className="text-[9px] font-semibold text-slate-500 mb-1">
             Viewability Rate

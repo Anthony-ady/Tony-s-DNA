@@ -43,6 +43,11 @@ import { API_ENDPOINTS } from "@/config/api";
 import { formatCurrency, formatCurrencyChart, formatLargeNumber, formatEcpm, formatRpbr, formatPercentage } from "@/utils/formatters";
 import { cn } from "@/lib/utils";
 import { TAILWIND_CLASSES } from "@/config/theme";
+import {
+  processHourlyTodayWithProjections,
+  computeHourlySummaryStats,
+  prepareHourlyChartData,
+} from "@/utils/hourlyProjections";
 
 export default function Dashboard({ useNetworkOpsForDaily = true }) {
   const navigate = useNavigate();
@@ -490,122 +495,19 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
       console.log('Raw API response:', data);
       
       // Process data for charts and calculations
-      // Sort data by timestamp to ensure correct trend calculation
-      const sortedData = data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-      
+      const rawRows = Array.isArray(data) ? data : (data?.Data || []);
+      const filteredData = rawRows.filter(
+        (item) =>
+          item.PricePublisher !== undefined || item.PriceAdvertiser_PublisherSide !== undefined
+      );
+      const sortedData = filteredData.sort(
+        (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+      );
+
       let processedData;
-      
+
       if (viewMode === 'hourly') {
-        // For hourly view, group data by day and create comparison rows
-        const today = new Date();
-        const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-        
-        // Group data by day (using UTC+0 timezone - no adjustment)
-        const dataByDay = {};
-        sortedData.forEach((item) => {
-          // Clean timestamp by removing microseconds and fixing format
-          let cleanTimestamp = item.timestamp;
-          cleanTimestamp = cleanTimestamp.replace(/\.\d{6}/, '');
-          if (!cleanTimestamp.endsWith('Z') && !cleanTimestamp.includes('+')) {
-            cleanTimestamp += 'Z';
-          }
-          
-          const date = new Date(cleanTimestamp);
-          // Use UTC+0 timezone (no adjustment)
-          const adjustedDate = new Date(date.getTime());
-          const dayKey = adjustedDate.toISOString().slice(0, 10);
-          
-          if (!dataByDay[dayKey]) {
-            dataByDay[dayKey] = [];
-          }
-          
-          dataByDay[dayKey].push({
-            ...item,
-            cleanDate: adjustedDate,
-            hour: adjustedDate.getUTCHours()
-          });
-        });
-        
-        // Create comparison rows for each hour
-        processedData = [];
-        // Use UTC+0 timezone (no adjustment)
-        const adjustedToday = new Date(today.getTime());
-        const adjustedYesterday = new Date(yesterday.getTime());
-        const todayData = dataByDay[adjustedToday.toISOString().slice(0, 10)] || [];
-        const yesterdayData = dataByDay[adjustedYesterday.toISOString().slice(0, 10)] || [];
-        
-        // Create a map for quick lookup
-        const yesterdayMap = {};
-        yesterdayData.forEach(item => {
-          yesterdayMap[item.hour] = item;
-        });
-        
-        // Process today's data and compare with yesterday
-        todayData.forEach((todayItem, index) => {
-          const yesterdayItem = yesterdayMap[todayItem.hour];
-          
-          // Calculate trends compared to same hour yesterday
-          const dspRevenueTrend = yesterdayItem ? 
-            (todayItem.PriceAdvertiser_PublisherSide > yesterdayItem.PriceAdvertiser_PublisherSide ? 'up' : 
-             todayItem.PriceAdvertiser_PublisherSide < yesterdayItem.PriceAdvertiser_PublisherSide ? 'down' : 'same') : 'same';
-          
-          const dspRevenueChangePercent = yesterdayItem ? 
-            (((todayItem.PriceAdvertiser_PublisherSide - yesterdayItem.PriceAdvertiser_PublisherSide) / yesterdayItem.PriceAdvertiser_PublisherSide) * 100).toFixed(1) : 0;
-          
-          const publisherCostsTrend = yesterdayItem ? 
-            (todayItem.PricePublisher > yesterdayItem.PricePublisher ? 'up' : 
-             todayItem.PricePublisher < yesterdayItem.PricePublisher ? 'down' : 'same') : 'same';
-          
-          const publisherCostsChangePercent = yesterdayItem ? 
-            (((todayItem.PricePublisher - yesterdayItem.PricePublisher) / yesterdayItem.PricePublisher) * 100).toFixed(1) : 0;
-          
-          const marginTrend = yesterdayItem ? 
-            ((todayItem.PriceAdvertiser_PublisherSide - todayItem.PricePublisher) > (yesterdayItem.PriceAdvertiser_PublisherSide - yesterdayItem.PricePublisher) ? 'up' : 
-             (todayItem.PriceAdvertiser_PublisherSide - todayItem.PricePublisher) < (yesterdayItem.PriceAdvertiser_PublisherSide - yesterdayItem.PricePublisher) ? 'down' : 'same') : 'same';
-          
-          const marginChangePercent = yesterdayItem ? 
-            ((((todayItem.PriceAdvertiser_PublisherSide - todayItem.PricePublisher) - (yesterdayItem.PriceAdvertiser_PublisherSide - yesterdayItem.PricePublisher)) / (yesterdayItem.PriceAdvertiser_PublisherSide - yesterdayItem.PricePublisher)) * 100).toFixed(1) : 0;
-          
-          processedData.push({
-            ...todayItem,
-            date: `${todayItem.cleanDate.toLocaleDateString('fr-FR', { timeZone: 'UTC' })} ${todayItem.cleanDate.toLocaleTimeString('en-US', { 
-              hour: '2-digit', 
-              minute: '2-digit',
-              hour12: true,
-              timeZone: 'UTC'
-            })}`,
-            formattedDate: `${todayItem.cleanDate.toLocaleDateString('fr-FR', { timeZone: 'UTC' })} ${todayItem.cleanDate.toLocaleTimeString('en-US', { 
-              hour: '2-digit', 
-              minute: '2-digit',
-              hour12: true,
-              timeZone: 'UTC'
-            })}`,
-            margin: todayItem.PriceAdvertiser_PublisherSide - todayItem.PricePublisher,
-            marginPercentage: ((todayItem.PriceAdvertiser_PublisherSide - todayItem.PricePublisher) / todayItem.PriceAdvertiser_PublisherSide * 100).toFixed(2),
-            dspRevenueTrend,
-            dspRevenueChangePercent,
-            publisherCostsTrend,
-            publisherCostsChangePercent,
-            marginTrend,
-            marginChangePercent,
-            // Add yesterday's data for comparison and chart
-            yesterdayData: yesterdayItem ? {
-              PriceAdvertiser_PublisherSide: yesterdayItem.PriceAdvertiser_PublisherSide,
-              PricePublisher: yesterdayItem.PricePublisher,
-              margin: yesterdayItem.PriceAdvertiser_PublisherSide - yesterdayItem.PricePublisher,
-              marginPercentage: ((yesterdayItem.PriceAdvertiser_PublisherSide - yesterdayItem.PricePublisher) / yesterdayItem.PriceAdvertiser_PublisherSide * 100).toFixed(2)
-            } : null,
-            // Add yesterday's revenue for chart (flattened for Recharts)
-            yesterdayDSPRevenue: yesterdayItem ? yesterdayItem.PriceAdvertiser_PublisherSide : null,
-            // Add hour-only format for chart
-            hourOnly: todayItem.cleanDate.toLocaleTimeString('en-US', { 
-              hour: '2-digit', 
-              minute: '2-digit',
-              hour12: true,
-              timeZone: 'UTC'
-            })
-          });
-        });
+        processedData = processHourlyTodayWithProjections(sortedData);
       } else {
         // For daily view, use the original logic
         processedData = sortedData.map((item, index) => {
@@ -899,77 +801,79 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
       setAnalyticsData(processedData);
 
       // Calculate summary statistics
-      const totalAdvertiserSpend = processedData.reduce((sum, item) => sum + item.PriceAdvertiser_PublisherSide, 0);
-      const totalPublisherRevenue = processedData.reduce((sum, item) => sum + item.PricePublisher, 0);
-      const totalMargin = totalAdvertiserSpend - totalPublisherRevenue;
-      const avgMarginPercentage = (totalMargin / totalAdvertiserSpend * 100).toFixed(2);
+      let summaryPayload;
 
-      // Calculate yesterday's statistics for hourly view (full day totals)
-      let yesterdayStats = {};
       if (viewMode === 'hourly') {
-        // Calculate totals for the entire yesterday from all data
+        const { real, estimated } = computeHourlySummaryStats(processedData);
+
         const yesterdayTotalAdvertiserSpend = sortedData.reduce((sum, item) => {
-          // Clean timestamp (using UTC+0 timezone)
           let cleanTimestamp = item.timestamp;
           cleanTimestamp = cleanTimestamp.replace(/\.\d{6}/, '');
           if (!cleanTimestamp.endsWith('Z') && !cleanTimestamp.includes('+')) {
             cleanTimestamp += 'Z';
           }
-          
           const date = new Date(cleanTimestamp);
-          // Use UTC+0 timezone (no adjustment)
-          const adjustedDate = new Date(date.getTime());
           const yesterday = new Date(new Date().getTime() - 24 * 60 * 60 * 1000);
-          const adjustedYesterday = new Date(yesterday.getTime());
-          
-          // Check if this item is from yesterday (full day)
-          if (adjustedDate.toISOString().slice(0, 10) === adjustedYesterday.toISOString().slice(0, 10)) {
+          if (date.toISOString().slice(0, 10) === yesterday.toISOString().slice(0, 10)) {
             return sum + item.PriceAdvertiser_PublisherSide;
           }
           return sum;
         }, 0);
 
         const yesterdayTotalPublisherRevenue = sortedData.reduce((sum, item) => {
-          // Clean timestamp (using UTC+0 timezone)
           let cleanTimestamp = item.timestamp;
           cleanTimestamp = cleanTimestamp.replace(/\.\d{6}/, '');
           if (!cleanTimestamp.endsWith('Z') && !cleanTimestamp.includes('+')) {
             cleanTimestamp += 'Z';
           }
-          
           const date = new Date(cleanTimestamp);
-          // Use UTC+0 timezone (no adjustment)
-          const adjustedDate = new Date(date.getTime());
           const yesterday = new Date(new Date().getTime() - 24 * 60 * 60 * 1000);
-          const adjustedYesterday = new Date(yesterday.getTime());
-          
-          // Check if this item is from yesterday (full day)
-          if (adjustedDate.toISOString().slice(0, 10) === adjustedYesterday.toISOString().slice(0, 10)) {
+          if (date.toISOString().slice(0, 10) === yesterday.toISOString().slice(0, 10)) {
             return sum + item.PricePublisher;
           }
           return sum;
         }, 0);
 
         const yesterdayTotalMargin = yesterdayTotalAdvertiserSpend - yesterdayTotalPublisherRevenue;
-        const yesterdayAvgMarginPercentage = yesterdayTotalAdvertiserSpend > 0 ? 
-          (yesterdayTotalMargin / yesterdayTotalAdvertiserSpend * 100).toFixed(2) : 0;
+        const yesterdayAvgMarginPercentage = yesterdayTotalAdvertiserSpend > 0
+          ? (yesterdayTotalMargin / yesterdayTotalAdvertiserSpend * 100).toFixed(2)
+          : 0;
 
-        yesterdayStats = {
+        summaryPayload = {
+          totalAdvertiserSpend: real.totalDSP,
+          totalPublisherRevenue: real.totalPublisher,
+          totalMargin: real.totalMargin,
+          avgMarginPercentage: real.marginPercentage.toFixed(2),
+          dataPoints: processedData.length,
           yesterdayTotalAdvertiserSpend,
           yesterdayTotalPublisherRevenue,
           yesterdayTotalMargin,
-          yesterdayAvgMarginPercentage
+          yesterdayAvgMarginPercentage,
+        };
+
+        if (estimated) {
+          summaryPayload.estimated = {
+            totalAdvertiserSpend: estimated.totalDSP,
+            totalPublisherRevenue: estimated.totalPublisher,
+            totalMargin: estimated.totalMargin,
+            avgMarginPercentage: estimated.marginPercentage.toFixed(2),
+          };
+        }
+      } else {
+        const totalAdvertiserSpend = processedData.reduce((sum, item) => sum + item.PriceAdvertiser_PublisherSide, 0);
+        const totalPublisherRevenue = processedData.reduce((sum, item) => sum + item.PricePublisher, 0);
+        const totalMargin = totalAdvertiserSpend - totalPublisherRevenue;
+        const avgMarginPercentage = (totalMargin / totalAdvertiserSpend * 100).toFixed(2);
+        summaryPayload = {
+          totalAdvertiserSpend,
+          totalPublisherRevenue,
+          totalMargin,
+          avgMarginPercentage,
+          dataPoints: processedData.length,
         };
       }
 
-      setSummaryStats({
-        totalAdvertiserSpend,
-        totalPublisherRevenue,
-        totalMargin,
-        avgMarginPercentage,
-        dataPoints: processedData.length,
-        ...yesterdayStats
-      });
+      setSummaryStats(summaryPayload);
 
       setLastRefresh(new Date());
 
@@ -3099,96 +3003,131 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
 
         {/* Summary Cards */}
         {summaryStats && !loading && (!useNetworkOpsForDaily || viewMode === 'hourly') && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {viewMode === 'hourly' ? (
-              <>
-        <Card className="border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-3 lg:p-5">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <p className={TAILWIND_CLASSES.formSectionLabel}>DSP Revenue</p>
-                <p className="text-lg lg:text-xl font-bold text-green-600 mt-1">
-                  {formatCurrency(summaryStats.totalAdvertiserSpend)}
-                </p>
-                        <div className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                          <TrendingUp className="w-3 h-3" />
-                          Yesterday: {formatCurrency(summaryStats.yesterdayTotalAdvertiserSpend || 0)}
+          viewMode === 'hourly' ? (
+            <div className="space-y-6 mb-6">
+              <div>
+                <p className="text-sm font-medium text-slate-600 mb-2">Real time (received data only)</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Card className="border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                    <CardContent className="p-3 lg:p-5">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <p className={TAILWIND_CLASSES.formSectionLabel}>DSP Revenue</p>
+                          <p className="text-lg lg:text-xl font-bold text-green-600 mt-1">
+                            {formatCurrency(summaryStats.totalAdvertiserSpend)}
+                          </p>
+                          <div className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3" />
+                            Yesterday: {formatCurrency(summaryStats.yesterdayTotalAdvertiserSpend || 0)}
+                          </div>
                         </div>
-              </div>
-              <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                <DollarSign className="w-4 h-4 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-3 lg:p-5">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <p className={TAILWIND_CLASSES.formSectionLabel}>Publisher Costs</p>
-                <p className="text-lg lg:text-xl font-bold text-red-600 mt-1">
-                  {formatCurrency(summaryStats.totalPublisherRevenue)}
-                </p>
-                        <div className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                          <TrendingUp className="w-3 h-3" />
-                          Yesterday: {formatCurrency(summaryStats.yesterdayTotalPublisherRevenue || 0)}
+                        <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <DollarSign className="w-4 h-4 text-white" />
                         </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                    <CardContent className="p-3 lg:p-5">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <p className={TAILWIND_CLASSES.formSectionLabel}>Publisher Costs</p>
+                          <p className="text-lg lg:text-xl font-bold text-red-600 mt-1">
+                            {formatCurrency(summaryStats.totalPublisherRevenue)}
+                          </p>
+                          <div className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3" />
+                            Yesterday: {formatCurrency(summaryStats.yesterdayTotalPublisherRevenue || 0)}
+                          </div>
+                        </div>
+                        <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <TrendingUp className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                    <CardContent className="p-3 lg:p-5">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <p className={TAILWIND_CLASSES.formSectionLabel}>ADY Margin</p>
+                          <p className="text-lg lg:text-xl font-bold mt-1" style={{ color: 'rgb(79, 70, 229)' }}>
+                            {formatCurrency(summaryStats.totalMargin)}
+                          </p>
+                          <div className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3" />
+                            Yesterday: {formatCurrency(summaryStats.yesterdayTotalMargin || 0)}
+                          </div>
+                        </div>
+                        <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <DollarSign className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                    <CardContent className="p-3 lg:p-5">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <p className={TAILWIND_CLASSES.formSectionLabel}>Avg Margin %</p>
+                          <p className="text-lg lg:text-xl font-bold text-orange-600 mt-1">
+                            {summaryStats.avgMarginPercentage}%
+                          </p>
+                          <div className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3" />
+                            Yesterday: {(summaryStats.yesterdayAvgMarginPercentage || 0)}%
+                          </div>
+                        </div>
+                        <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Calendar className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
-              <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                <TrendingUp className="w-4 h-4 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-3 lg:p-5">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <p className={TAILWIND_CLASSES.formSectionLabel}>ADY Margin</p>
-                <p className="text-lg lg:text-xl font-bold mt-1" style={{ color: 'rgb(79, 70, 229)' }}>
-                  {formatCurrency(summaryStats.totalMargin)}
-                </p>
-                        <div className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                          <TrendingUp className="w-3 h-3" />
-                          Yesterday: {formatCurrency(summaryStats.yesterdayTotalMargin || 0)}
-              </div>
-              </div>
-              <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                <DollarSign className="w-4 h-4 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-3 lg:p-5">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                        <p className={TAILWIND_CLASSES.formSectionLabel}>Avg Margin %</p>
-                        <p className="text-lg lg:text-xl font-bold text-orange-600 mt-1">
-                          {summaryStats.avgMarginPercentage}%
+              {summaryStats.estimated && (
+                <div>
+                  <p className="text-sm font-medium text-blue-700 mb-2">Estimated (full day, including hourly projections)</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card className="border-blue-200 bg-blue-50/60 shadow-sm">
+                      <CardContent className="p-3 lg:p-5">
+                        <p className={TAILWIND_CLASSES.formSectionLabel}>DSP Revenue</p>
+                        <p className="text-lg lg:text-xl font-bold text-blue-600 mt-1">
+                          {formatCurrency(summaryStats.estimated.totalAdvertiserSpend)}
                         </p>
-                        <div className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                          <TrendingUp className="w-3 h-3" />
-                          Yesterday: {(summaryStats.yesterdayAvgMarginPercentage || 0)}%
-                        </div>
-              </div>
-              <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-white">
-                  <path d="M8 2v4"></path>
-                  <path d="M16 2v4"></path>
-                  <rect width="18" height="18" x="3" y="4" rx="2"></rect>
-                  <path d="M3 10h18"></path>
-                </svg>
-              </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-blue-200 bg-blue-50/60 shadow-sm">
+                      <CardContent className="p-3 lg:p-5">
+                        <p className={TAILWIND_CLASSES.formSectionLabel}>Publisher Costs</p>
+                        <p className="text-lg lg:text-xl font-bold text-blue-600 mt-1">
+                          {formatCurrency(summaryStats.estimated.totalPublisherRevenue)}
+                        </p>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-blue-200 bg-blue-50/60 shadow-sm">
+                      <CardContent className="p-3 lg:p-5">
+                        <p className={TAILWIND_CLASSES.formSectionLabel}>ADY Margin</p>
+                        <p className="text-lg lg:text-xl font-bold text-blue-600 mt-1">
+                          {formatCurrency(summaryStats.estimated.totalMargin)}
+                        </p>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-blue-200 bg-blue-50/60 shadow-sm">
+                      <CardContent className="p-3 lg:p-5">
+                        <p className={TAILWIND_CLASSES.formSectionLabel}>Avg Margin %</p>
+                        <p className="text-lg lg:text-xl font-bold text-blue-600 mt-1">
+                          {summaryStats.estimated.avgMarginPercentage}%
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              )}
             </div>
-          </CardContent>
-        </Card>
-              </>
-            ) : (
-              <>
+          ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <Card className="border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                   <CardContent className="p-3 lg:p-5">
                     <div className="flex items-start justify-between">
@@ -3257,9 +3196,8 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
                     </div>
                   </CardContent>
                 </Card>
-              </>
-            )}
           </div>
+          )
         )}
 
         {/* Chart for Hourly View */}
@@ -3276,7 +3214,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
         <CardContent className="pt-0">
               <div className="h-48 lg:h-80 min-h-[200px] min-w-[300px]">
                 <ResponsiveContainer width="100%" height="100%" minHeight={200} minWidth={300}>
-                  <LineChart data={analyticsData}>
+                  <LineChart data={prepareHourlyChartData(analyticsData)}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis 
                       dataKey="hourOnly" 
@@ -3290,33 +3228,64 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
                       tickFormatter={(value) => formatCurrencyChart(value)}
                     />
                     <RechartsTooltip 
-                      formatter={(value, name) => [
-                        formatCurrencyChart(value), 
-                        name === 'PriceAdvertiser_PublisherSide' ? 'DSP Revenue' : 
-                        name === 'yesterdayDSPRevenue' ? 'Yesterday DSP Revenue' : name
-                      ]}
+                      formatter={(value, name, item) => {
+                        if (item?.dataKey === 'bridgeDsp' || name === 'bridgeDsp') {
+                          return ['', ''];
+                        }
+                        if (value == null || Number.isNaN(Number(value))) {
+                          return ['', ''];
+                        }
+                        return [
+                          formatCurrencyChart(value),
+                          name === 'dspRevenueTodayReal' ? 'DSP Revenue' :
+                          name === 'dspRevenueTodayProjected' ? 'DSP Revenue (estim.)' :
+                          name === 'yesterdayDspRevenue' ? 'Yesterday DSP Revenue' : name
+                        ];
+                      }}
                       labelFormatter={(label) => `Time: ${label}`}
                       contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '6px' }}
                     />
                     <Legend onClick={(e) => toggleSeries('hourly_revenue', e.dataKey)} wrapperStyle={{ cursor: 'pointer' }} />
                     <Line 
                       type="monotone" 
-                      dataKey="PriceAdvertiser_PublisherSide" 
+                      dataKey="dspRevenueTodayReal" 
                       stroke="#10b981" 
                       strokeWidth={2}
+                      connectNulls
                       name="DSP Revenue"
-                      dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
-                      hide={isSeriesHidden('hourly_revenue', 'PriceAdvertiser_PublisherSide')}
+                      dot={false}
+                      hide={isSeriesHidden('hourly_revenue', 'dspRevenueTodayReal')}
                     />
                     <Line 
                       type="monotone" 
-                      dataKey="yesterdayDSPRevenue" 
+                      dataKey="dspRevenueTodayProjected" 
+                      stroke="#2563eb" 
+                      strokeWidth={2}
+                      connectNulls
+                      name="DSP Revenue (estim.)"
+                      dot={false}
+                      hide={isSeriesHidden('hourly_revenue', 'dspRevenueTodayProjected')}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="yesterdayDspRevenue" 
                       stroke="#6b7280" 
                       strokeWidth={2}
                       strokeDasharray="5 5"
+                      connectNulls
                       name="Yesterday DSP Revenue"
-                      dot={{ fill: '#6b7280', strokeWidth: 2, r: 4 }}
-                      hide={isSeriesHidden('hourly_revenue', 'yesterdayDSPRevenue')}
+                      dot={false}
+                      hide={isSeriesHidden('hourly_revenue', 'yesterdayDspRevenue')}
+                    />
+                    <Line
+                      type="linear"
+                      dataKey="bridgeDsp"
+                      stroke="#14b8a6"
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={false}
+                      legendType="none"
+                      isAnimationActive={false}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -4318,7 +4287,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
                           </TableCell>
                       {viewMode === 'hourly' ? (
                         <>
-                          <TableCell className="text-center text-green-600">
+                          <TableCell className={`text-center ${item.isProjected ? 'text-blue-600 font-medium' : 'text-green-600'}`}>
                             {formatCurrency(item.PriceAdvertiser_PublisherSide)}
                         </TableCell>
                           <TableCell className="text-center text-green-600 opacity-60">
@@ -4328,14 +4297,14 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
                             <div className="flex items-center justify-center gap-1">
                               {item.dspRevenueTrend === 'up' && (
                                 <>
-                                  <ArrowUpRight className="w-4 h-4 text-green-500" />
-                                  <span className="text-green-500 text-xs font-medium">+{item.dspRevenueChangePercent}%</span>
+                                  <ArrowUpRight className={`w-4 h-4 ${item.isProjected ? 'text-blue-500' : 'text-green-500'}`} />
+                                  <span className={`${item.isProjected ? 'text-blue-500' : 'text-green-500'} text-xs font-medium`}>+{item.dspRevenueChangePercent}%</span>
                                 </>
                               )}
                               {item.dspRevenueTrend === 'down' && (
                                 <>
-                                  <ArrowDownRight className="w-4 h-4 text-red-500" />
-                                  <span className="text-red-500 text-xs font-medium">{item.dspRevenueChangePercent}%</span>
+                                  <ArrowDownRight className={`w-4 h-4 ${item.isProjected ? 'text-blue-800' : 'text-red-500'}`} />
+                                  <span className={`${item.isProjected ? 'text-blue-800' : 'text-red-500'} text-xs font-medium`}>{item.dspRevenueChangePercent}%</span>
                                 </>
                               )}
                               {item.dspRevenueTrend === 'same' && (
@@ -4343,7 +4312,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
                               )}
                               </div>
                             </TableCell>
-                          <TableCell className="text-center text-red-600">
+                          <TableCell className={`text-center ${item.isProjected ? 'text-blue-600' : 'text-red-600'}`}>
                             {formatCurrency(item.PricePublisher)}
                             </TableCell>
                           <TableCell className="text-center text-red-600 opacity-60">
@@ -4353,14 +4322,14 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
                             <div className="flex items-center justify-center gap-1">
                               {item.publisherCostsTrend === 'up' && (
                                 <>
-                                  <ArrowUpRight className="w-4 h-4 text-red-500" />
-                                  <span className="text-red-500 text-xs font-medium">+{item.publisherCostsChangePercent}%</span>
+                                  <ArrowUpRight className={`w-4 h-4 ${item.isProjected ? 'text-blue-800' : 'text-red-500'}`} />
+                                  <span className={`${item.isProjected ? 'text-blue-800' : 'text-red-500'} text-xs font-medium`}>+{item.publisherCostsChangePercent}%</span>
                                 </>
                               )}
                               {item.publisherCostsTrend === 'down' && (
                                 <>
-                                  <ArrowDownRight className="w-4 h-4 text-green-500" />
-                                  <span className="text-green-500 text-xs font-medium">{item.publisherCostsChangePercent}%</span>
+                                  <ArrowDownRight className={`w-4 h-4 ${item.isProjected ? 'text-blue-500' : 'text-green-500'}`} />
+                                  <span className={`${item.isProjected ? 'text-blue-500' : 'text-green-500'} text-xs font-medium`}>{item.publisherCostsChangePercent}%</span>
                                 </>
                               )}
                               {item.publisherCostsTrend === 'same' && (
@@ -4368,7 +4337,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
                               )}
                               </div>
                             </TableCell>
-                          <TableCell className="text-center text-black">
+                          <TableCell className={`text-center ${item.isProjected ? 'text-blue-600' : 'text-black'}`}>
                             {formatCurrency(item.margin)}
                           </TableCell>
                           <TableCell className="text-center text-black opacity-60">
@@ -4378,14 +4347,14 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
                             <div className="flex items-center justify-center gap-1">
                               {item.marginTrend === 'up' && (
                                 <>
-                                  <ArrowUpRight className="w-4 h-4 text-green-500" />
-                                  <span className="text-green-500 text-xs font-medium">+{item.marginChangePercent}%</span>
+                                  <ArrowUpRight className={`w-4 h-4 ${item.isProjected ? 'text-blue-500' : 'text-green-500'}`} />
+                                  <span className={`${item.isProjected ? 'text-blue-500' : 'text-green-500'} text-xs font-medium`}>+{item.marginChangePercent}%</span>
                                 </>
                               )}
                               {item.marginTrend === 'down' && (
                                 <>
-                                  <ArrowDownRight className="w-4 h-4 text-red-500" />
-                                  <span className="text-red-500 text-xs font-medium">{item.marginChangePercent}%</span>
+                                  <ArrowDownRight className={`w-4 h-4 ${item.isProjected ? 'text-blue-800' : 'text-red-500'}`} />
+                                  <span className={`${item.isProjected ? 'text-blue-800' : 'text-red-500'} text-xs font-medium`}>{item.marginChangePercent}%</span>
                                 </>
                               )}
                               {item.marginTrend === 'same' && (
@@ -4393,13 +4362,13 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
                               )}
                               </div>
                             </TableCell>
-                            <TableCell className="text-center">
+                            <TableCell className={`text-center ${item.isProjected ? 'text-blue-600' : ''}`}>
                             {item.marginPercentage > 0 ? (
-                              <span className="px-2 py-0.5 text-xs font-medium transition-colors rounded-md bg-[rgb(75,99,226)] text-white inline-block">
+                              <span className={`px-2 py-0.5 text-xs font-medium transition-colors rounded-md inline-block ${item.isProjected ? 'bg-blue-100 text-blue-700' : 'bg-[rgb(75,99,226)] text-white'}`}>
                                 {item.marginPercentage}%
                               </span>
                             ) : (
-                              <Badge variant="destructive">
+                              <Badge variant={item.isProjected ? 'outline' : 'destructive'} className={item.isProjected ? 'border-blue-300 text-blue-700' : ''}>
                                 {item.marginPercentage}%
                               </Badge>
                             )}

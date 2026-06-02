@@ -4,7 +4,7 @@
  * Displays deals for the selected Sales user
  */
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { cachedFetch } from "@/utils/apiCache";
@@ -13,6 +13,7 @@ import { ArrowDownRight, ArrowUpRight, Loader2 } from "lucide-react";
 import { formatError } from "@/utils/errorFormatter";
 import { EntityPerformanceCard } from "@/components/dashboard/EntityPerformanceCard";
 import { API_ENDPOINTS } from "@/config/api";
+import { buildAdserverHourlySummaryPayload, dateRangeToDruidInterval, processEntityHourlySparkFromRaw } from "@/utils/hourlyProjections";
 
 export default function SalesDashboard() {
   const { getToken } = useAuth();
@@ -186,6 +187,15 @@ export default function SalesDashboard() {
 
     return payload;
   };
+
+  const buildHourlySummaryPayload = useCallback((startDate, endDate) => {
+    const { begin, end } = dateRangeToDruidInterval(startDate, endDate);
+    const filters = {};
+    if (dealIds.length > 0) {
+      filters.DealId = { Value: dealIds, Operator: 'in' };
+    }
+    return buildAdserverHourlySummaryPayload(begin, end, filters);
+  }, [dealIds]);
 
   const processTopDealsResponse = (data) => {
     const entities = (data.Data || []).filter(item => item.DealId || item.dealId);
@@ -367,94 +377,8 @@ export default function SalesDashboard() {
         
         // Process time-series data
         if (viewMode === 'hourly') {
-        // Filter and sort data
-        const filteredData = rawData.filter(item => 
-          item.PricePublisher !== undefined || item.PriceAdvertiser_PublisherSide !== undefined
-        );
-        const sortedData = filteredData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-        
-        // Group data by day (using UTC+0 timezone)
-        const dataByDay = {};
-        sortedData.forEach((item) => {
-          let cleanTimestamp = item.timestamp;
-          if (typeof cleanTimestamp === 'string') {
-            cleanTimestamp = cleanTimestamp.replace(/\.\d{6}/, '');
-            if (!cleanTimestamp.endsWith('Z') && !cleanTimestamp.includes('+')) {
-              cleanTimestamp += 'Z';
-            }
-          }
-          
-          const date = new Date(cleanTimestamp);
-          const adjustedDate = new Date(date.getTime());
-          const dayKey = adjustedDate.toISOString().slice(0, 10);
-          
-          if (!dataByDay[dayKey]) {
-            dataByDay[dayKey] = [];
-          }
-          
-          dataByDay[dayKey].push({
-            ...item,
-            cleanDate: adjustedDate,
-            hour: adjustedDate.getUTCHours()
-          });
-        });
-        
-        // Create comparison rows: Today vs Yesterday hour by hour
-        const processedData = [];
-        const today = new Date();
-        const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-        const adjustedToday = new Date(today.getTime());
-        const adjustedYesterday = new Date(yesterday.getTime());
-        const todayData = dataByDay[adjustedToday.toISOString().slice(0, 10)] || [];
-        const yesterdayData = dataByDay[adjustedYesterday.toISOString().slice(0, 10)] || [];
-        
-        const yesterdayMap = {};
-        yesterdayData.forEach(item => {
-          yesterdayMap[item.hour] = item;
-        });
-        
-        todayData.forEach(todayItem => {
-          const yesterdayItem = yesterdayMap[todayItem.hour];
-          
-          const clicks = todayItem.CLICK ?? todayItem.Click ?? 0;
-          const impressions = todayItem.IMPRESSION ?? todayItem.Impression ?? 0;
-          const ctr = impressions ? (clicks / impressions) * 100 : 0;
-          
-          const yesterdayClicks = yesterdayItem ? (yesterdayItem.CLICK ?? yesterdayItem.Click ?? 0) : 0;
-          const yesterdayImpressions = yesterdayItem ? (yesterdayItem.IMPRESSION ?? yesterdayItem.Impression ?? 0) : 0;
-          const yesterdayCtr = yesterdayImpressions ? (yesterdayClicks / yesterdayImpressions) * 100 : 0;
-          
-          // Format label with hour
-          const label = todayItem.cleanDate.toLocaleString('fr-FR', {
-            day: '2-digit',
-            month: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-          });
-          
-          processedData.push({
-            day: label,
-            entityRevenue: todayItem.PriceAdvertiser_PublisherSide || 0,
-            publisherCost: todayItem.PricePublisher || 0,
-            margin: (todayItem.PriceAdvertiser_PublisherSide || 0) - (todayItem.PricePublisher || 0),
-            click: clicks,
-            impression: impressions,
-            ctr,
-            // Include yesterday data for comparison
-            yesterdayData: yesterdayItem ? {
-              entityRevenue: yesterdayItem.PriceAdvertiser_PublisherSide || 0,
-              publisherCost: yesterdayItem.PricePublisher || 0,
-              margin: (yesterdayItem.PriceAdvertiser_PublisherSide || 0) - (yesterdayItem.PricePublisher || 0),
-              click: yesterdayClicks,
-              impression: yesterdayImpressions,
-              ctr: yesterdayCtr
-            } : null,
-            hour: todayItem.hour
-          });
-        });
-        
-          return processedData;
-        } else {
+        return processEntityHourlySparkFromRaw(rawData);
+      } else {
           // Daily mode: process with trends compared to previous day
           const normalized = rawData.map((item) => {
             if (
@@ -766,6 +690,7 @@ export default function SalesDashboard() {
             entityNamePlural="deals"
             apiEndpoint={API_ENDPOINTS.DRUID_SEARCH}
             topEntitiesPayload={topDealsPayload}
+            buildHourlySummaryPayload={buildHourlySummaryPayload}
             processTopEntitiesResponse={processTopDealsResponse}
             getEntityId={getDealId}
             getEntityName={getDealName}

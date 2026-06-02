@@ -16,6 +16,8 @@ import { Loader2, TrendingUp, DollarSign, ChevronDown, ChevronRight, ChevronLeft
 import { useNavigate } from 'react-router-dom';
 import { cachedFetch } from '@/utils/apiCache';
 import { TAILWIND_CLASSES } from '@/config/theme';
+import HourlyAnalyticsSummaryCards from '@/components/analytics/HourlyAnalyticsSummaryCards';
+import { computeHourlySummaryFromRawData } from '@/utils/hourlyProjections';
 
 export default function DashboardTemplate({
   // Configuration
@@ -27,6 +29,7 @@ export default function DashboardTemplate({
   // API configuration
   apiEndpoint,
   topEntitiesPayload, // Function that returns payload for top entities
+  buildHourlySummaryPayload = null, // (startDate, endDate) => PT1H payload for KPI cards in hourly mode
   fetchDailyDataForEntity, // Function that fetches daily data for an entity
   
   // Data processing
@@ -96,6 +99,7 @@ export default function DashboardTemplate({
   const navigate = useNavigate();
   const [topEntitiesData, setTopEntitiesData] = useState([]);
   const [summaryStats, setSummaryStats] = useState(null);
+  const [hourlySummaryStats, setHourlySummaryStats] = useState(null);
   const [expandedRows, setExpandedRows] = useState(new Set());
   const [dailyDataCache, setDailyDataCache] = useState({});
   const [loadingDailyData, setLoadingDailyData] = useState(new Set());
@@ -283,15 +287,32 @@ export default function DashboardTemplate({
 
     try {
       const payload = topEntitiesPayload(fetchStart, fetchEnd);
-      
-      const response = await cachedFetch(apiEndpoint, {
+      const isHourlySummary = dashboardViewMode === 'hourly' && typeof buildHourlySummaryPayload === 'function';
+
+      const fetchOptions = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-ayl-auth-token': token
         },
+      };
+
+      const entitiesPromise = cachedFetch(apiEndpoint, {
+        ...fetchOptions,
         body: JSON.stringify(payload)
       });
+
+      const hourlySummaryPromise = isHourlySummary
+        ? cachedFetch(apiEndpoint, {
+            ...fetchOptions,
+            body: JSON.stringify(buildHourlySummaryPayload(fetchStart, fetchEnd)),
+          })
+        : null;
+
+      const [response, hourlyResponse] = await Promise.all([
+        entitiesPromise,
+        hourlySummaryPromise ?? Promise.resolve(null),
+      ]);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -299,9 +320,23 @@ export default function DashboardTemplate({
 
       const data = await response.json();
       const processed = processTopEntitiesResponse(data);
-      
+
       setTopEntitiesData(processed.entities || []);
-      setSummaryStats(processed.summary);
+      if (isHourlySummary) {
+        setSummaryStats(processed.summary);
+        if (hourlyResponse?.ok) {
+          const hourlyData = await hourlyResponse.json();
+          const rawHourly = hourlyData?.Data ?? hourlyData;
+          setHourlySummaryStats(
+            computeHourlySummaryFromRawData(Array.isArray(rawHourly) ? rawHourly : [])
+          );
+        } else {
+          setHourlySummaryStats(null);
+        }
+      } else {
+        setSummaryStats(processed.summary);
+        setHourlySummaryStats(null);
+      }
       
       // Clear daily data cache when fetching new data
       setDailyDataCache({});
@@ -330,7 +365,7 @@ export default function DashboardTemplate({
     if (effectiveDates.start && effectiveDates.end) {
       fetchData();
     }
-  }, [effectiveDates.start, effectiveDates.end]);
+  }, [effectiveDates.start, effectiveDates.end, dashboardViewMode]);
 
   // Expose refresh function to window for Layout header refresh button
   useEffect(() => {
@@ -773,7 +808,15 @@ export default function DashboardTemplate({
       </div>
 
       {/* Summary Cards */}
-      {summaryStats && !loading && (
+      {!loading && dashboardViewMode === 'hourly' && hourlySummaryStats && (
+        <HourlyAnalyticsSummaryCards
+          summaryStats={hourlySummaryStats}
+          viewMode="hourly"
+          formatCurrencyFn={formatCurrency}
+        />
+      )}
+
+      {!loading && dashboardViewMode !== 'hourly' && summaryStats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="border-slate-200 shadow-sm">
             <CardContent className="p-6">
