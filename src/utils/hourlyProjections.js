@@ -119,6 +119,28 @@ function formatHourOnly(cleanDate) {
   });
 }
 
+/** Shared real-time X axis: 00H … 24H every 4 hours (UTC). */
+export const HOURLY_X_AXIS_DOMAIN = [0, 24];
+export const HOURLY_X_AXIS_TICKS = [0, 4, 8, 12, 16, 20, 24];
+
+export function formatHourAxisTick(value) {
+  const h = Number(value);
+  if (Number.isNaN(h)) return '';
+  if (h === 24) return '24H';
+  return `${String(h).padStart(2, '0')}H`;
+}
+
+export function parseHourFromItem(item) {
+  if (typeof item?.hour === 'number' && !Number.isNaN(item.hour)) {
+    return item.hour;
+  }
+  if (item?.cleanDate instanceof Date && !Number.isNaN(item.cleanDate.getTime())) {
+    return item.cleanDate.getUTCHours();
+  }
+  const match = String(item?.hourOnly ?? item?.day ?? '').match(/^(\d{1,2})/);
+  return match ? parseInt(match[1], 10) : null;
+}
+
 /**
  * Process hourly rows: union of today/yesterday hours, project missing today slots.
  * @param {Array} sortedData - filtered rows sorted by timestamp
@@ -290,6 +312,7 @@ export function prepareHourlyChartData(data) {
     const dsp = item.PriceAdvertiser_PublisherSide || 0;
     return {
       ...item,
+      hour: parseHourFromItem(item),
       yesterdayDspRevenue: item.yesterdayDSPRevenue ?? item.yesterdayDspRevenue ?? null,
       dspRevenueTodayReal: item.isProjected ? null : dsp,
       dspRevenueTodayProjected: item.isProjected ? dsp : null,
@@ -427,6 +450,8 @@ export function processEntityHourlySparkFromRaw(rawData) {
 
     return {
       day: item.hourOnly || item.formattedDate || item.date,
+      hourOnly: item.hourOnly,
+      hour: item.hour,
       entityRevenue: item.PriceAdvertiser_PublisherSide || 0,
       publisherCost: item.PricePublisher || 0,
       margin: item.margin ?? ((item.PriceAdvertiser_PublisherSide || 0) - (item.PricePublisher || 0)),

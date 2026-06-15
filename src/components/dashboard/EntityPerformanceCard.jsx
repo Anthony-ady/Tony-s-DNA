@@ -1,7 +1,8 @@
 import React from "react";
 import { DollarSign, TrendingUp, BarChart3, ExternalLink } from "lucide-react";
 import { enqueueSparklineFetch } from "@/utils/sparklineFetchQueue";
-import { computeHourlySummaryStats } from "@/utils/hourlyProjections";
+import { computeHourlySummaryStats, parseHourFromItem } from "@/utils/hourlyProjections";
+import HourlyChartXAxis, { hourlyChartMargins } from "@/components/analytics/HourlyChartXAxis";
 import {
   LineChart,
   Line,
@@ -112,6 +113,8 @@ export function EntityPerformanceCard({
         if (cancelled || requestId !== requestIdRef.current) return;
         const mapped = (daily || []).map((d) => ({
           dateLabel: d.day,
+          hourOnly: d.hourOnly ?? d.day,
+          hour: parseHourFromItem(d),
           entityRevenue: d.entityRevenue || 0,
           publisherCost: d.publisherCost || 0,
           isProjected: !!d.isProjected,
@@ -309,7 +312,7 @@ export function EntityPerformanceCard({
   return (
     <div
       ref={cardRootRef}
-      className="relative flex flex-col justify-between rounded-xl border border-slate-200 bg-white text-slate-900 p-5 shadow-sm cursor-pointer hover:border-[rgb(30,47,130)] hover:shadow-md transition min-w-0 overflow-hidden"
+      className="relative flex flex-col justify-between rounded-xl border border-slate-200 bg-white text-slate-900 p-5 shadow-sm cursor-pointer hover:border-[rgb(30,47,130)] hover:shadow-md transition min-w-0 overflow-x-hidden"
       style={{ position: "relative", zIndex: isHovered ? 100 : 1 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -505,8 +508,15 @@ export function EntityPerformanceCard({
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%" style={{ position: "relative", zIndex: 0 }}>
-            <LineChart data={sparkData} margin={{ top: 4, right: 4, left: -8, bottom: 0 }}>
-              <XAxis dataKey="dateLabel" hide />
+            <LineChart
+              data={sparkData}
+              margin={viewMode === "hourly" ? hourlyChartMargins.sm : { top: 4, right: 4, left: -8, bottom: 0 }}
+            >
+              {viewMode === "hourly" ? (
+                <HourlyChartXAxis />
+              ) : (
+                <XAxis dataKey="dateLabel" hide />
+              )}
               <YAxis hide domain={["auto", "auto"]} />
               <CartesianGrid stroke="#e5e7eb" strokeDasharray="3 3" vertical={false} />
               <RechartsTooltip
@@ -526,7 +536,12 @@ export function EntityPerformanceCard({
                     ? "Yesterday Publisher Costs"
                     : name,
                 ]}
-                labelFormatter={(label) => label}
+                labelFormatter={(label, payload) => {
+                  if (viewMode === "hourly" && payload?.[0]?.payload) {
+                    return payload[0].payload.hourOnly || label;
+                  }
+                  return label;
+                }}
                 contentStyle={{
                   backgroundColor: "#ffffff",
                   border: "1px solid #e5e7eb",

@@ -33,6 +33,7 @@ import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger }
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import HourlyAnalyticsSummaryCards from '@/components/analytics/HourlyAnalyticsSummaryCards';
+import HourlyChartXAxis, { hourlyChartMargins } from '@/components/analytics/HourlyChartXAxis';
 import { prepareHourlyChartData } from '@/utils/hourlyProjections';
 
 /**
@@ -3549,21 +3550,14 @@ export default function AnalyticsTemplate({
   const defaultRenderChart = (analyticsDataArg, viewModeArg, networkOperationsDataArg) => {
     if (viewModeArg === 'hourly') {
       const chartData = prepareHourlyChartData(analyticsDataArg);
-      const xAxisKey = chartData?.[0]?.hourOnly ? 'hourOnly' : 'formattedDate';
       const hasYesterday = chartData.some((item) => item.yesterdayDspRevenue != null);
       const hasProjected = chartData.some((item) => item.isProjected);
       return (
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
+            <LineChart data={chartData} margin={hourlyChartMargins.lg}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey={xAxisKey} 
-                tick={{ fontSize: 12 }}
-                angle={-45}
-                textAnchor="end"
-                height={80}
-              />
+              <HourlyChartXAxis tickFontSize={11} tickFill="#64748b" height={28} tickDy={12} />
               <YAxis 
                 tick={{ fontSize: 12 }}
                 tickFormatter={(value) => formatCurrency(value)}
@@ -3592,7 +3586,12 @@ export default function AnalyticsTemplate({
                     name === 'yesterdayDspRevenue' ? 'Yesterday DSP Revenue' : name
                   ];
                 }}
-                labelFormatter={(label) => `Time: ${label}`}
+                labelFormatter={(label, payload) => {
+                  if (payload?.[0]?.payload?.hourOnly) {
+                    return `Time: ${payload[0].payload.hourOnly}`;
+                  }
+                  return `Time: ${label}`;
+                }}
               />
               <Legend onClick={(e) => toggleSeries('hourly_revenue', e.dataKey)} wrapperStyle={{ cursor: 'pointer' }} />
               <Line

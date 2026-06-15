@@ -328,6 +328,80 @@ export default function DSPAnalytics() {
     return computeDailyAnalyticsSummaryStats(data);
   };
 
+  const fetchHourlyDataForDate = async (dateString, dspId) => {
+    const token = getToken();
+    if (!token) throw new Error('No auth token');
+    let date;
+    if (dateString.includes('/')) {
+      const [day, month, year] = dateString.split('/');
+      date = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+    } else {
+      date = new Date(dateString + 'T00:00:00.000Z');
+    }
+    const nextDay = new Date(date);
+    nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+
+    const payload = {
+      Filters: { Partner: { Value: [dspId], Operator: 'in' } },
+      Intervals: [{ Begin: date.toISOString(), End: new Date(nextDay.getTime() - 1).toISOString() }],
+      Metrics: ['PricePublisher', 'PriceAdvertiser_PublisherSide'],
+      Granularity: { type: 'period', period: 'PT1H' },
+      View: 'ADVANCED_PUBLISHER',
+      Datasource: 'adserver_stats',
+      TimeZone: 'Etc/GMT',
+    };
+
+    const res = await fetch(API_ENDPOINTS.DRUID_SEARCH, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-ayl-auth-token': token },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return (Array.isArray(data?.Data) ? data.Data : Array.isArray(data) ? data : [])
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+      .map((item) => {
+        let ts = item.timestamp.replace(/\.\d{6}/, '');
+        if (!ts.endsWith('Z') && !ts.includes('+')) ts += 'Z';
+        const d = new Date(ts);
+        const dspRev = item.PriceAdvertiser_PublisherSide || 0;
+        const pubCost = item.PricePublisher || 0;
+        return {
+          ...item,
+          formattedTime: d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'UTC' }),
+          hour: d.getUTCHours(),
+          margin: dspRev - pubCost,
+          marginPercentage: dspRev > 0 ? ((dspRev - pubCost) / dspRev * 100).toFixed(2) : 0,
+        };
+      });
+  };
+
+  const toggleDateExpansion = async (dateString, dateKey, dspId) => {
+    const key = dateKey || dateString;
+    const newExpanded = new Set(expandedDates);
+    if (newExpanded.has(key)) {
+      newExpanded.delete(key);
+    } else {
+      newExpanded.add(key);
+      if (!hourlyDataCache[key] && !loadingHourlyData.has(key)) {
+        setLoadingHourlyData((prev) => new Set(prev).add(key));
+        try {
+          const hourly = await fetchHourlyDataForDate(dateString, dspId);
+          setHourlyDataCache((prev) => ({ ...prev, [key]: hourly }));
+        } catch (e) {
+          console.error('Error fetching hourly data:', e);
+        } finally {
+          setLoadingHourlyData((prev) => {
+            const s = new Set(prev);
+            s.delete(key);
+            return s;
+          });
+        }
+      }
+    }
+    setExpandedDates(newExpanded);
+  };
+
   const tableConfig = useMemo(() => ({
     hourly: {
       columns: [

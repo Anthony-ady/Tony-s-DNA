@@ -48,6 +48,7 @@ import {
   computeHourlySummaryStats,
   prepareHourlyChartData,
 } from "@/utils/hourlyProjections";
+import HourlyChartXAxis, { hourlyChartMargins } from "@/components/analytics/HourlyChartXAxis";
 
 export default function Dashboard({ useNetworkOpsForDaily = true }) {
   const navigate = useNavigate();
@@ -3214,15 +3215,9 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
         <CardContent className="pt-0">
               <div className="h-48 lg:h-80 min-h-[200px] min-w-[300px]">
                 <ResponsiveContainer width="100%" height="100%" minHeight={200} minWidth={300}>
-                  <LineChart data={prepareHourlyChartData(analyticsData)}>
+                  <LineChart data={prepareHourlyChartData(analyticsData)} margin={hourlyChartMargins.lg}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="hourOnly" 
-                      tick={{ fontSize: 12 }}
-                      angle={-45}
-                      textAnchor="end"
-                      height={80}
-                    />
+                    <HourlyChartXAxis tickFontSize={11} tickFill="#64748b" height={28} tickDy={12} />
                     <YAxis 
                       tick={{ fontSize: 12 }}
                       tickFormatter={(value) => formatCurrencyChart(value)}
@@ -3242,7 +3237,12 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
                           name === 'yesterdayDspRevenue' ? 'Yesterday DSP Revenue' : name
                         ];
                       }}
-                      labelFormatter={(label) => `Time: ${label}`}
+                      labelFormatter={(label, payload) => {
+                        if (payload?.[0]?.payload?.hourOnly) {
+                          return `Time: ${payload[0].payload.hourOnly}`;
+                        }
+                        return `Time: ${label}`;
+                      }}
                       contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '6px' }}
                     />
                     <Legend onClick={(e) => toggleSeries('hourly_revenue', e.dataKey)} wrapperStyle={{ cursor: 'pointer' }} />
