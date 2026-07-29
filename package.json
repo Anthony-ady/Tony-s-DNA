@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:extension": "vite --config vite.config.extension.js --mode extension",
     "build": "node build.js",
+    "build:extension": "vite build --config vite.config.extension.js --mode extension",
     "build:vite": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -66,6 +68,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@crxjs/vite-plugin": "^2.7.0",
     "@eslint/js": "^9.19.0",
     "@flydotio/dockerfile": "^0.7.8",
     "@types/node": "^22.13.5",

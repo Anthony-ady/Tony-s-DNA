@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { TAILWIND_CLASSES } from '@/config/theme';
+import { IS_EXTENSION } from '@/config/appMode';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
@@ -67,7 +68,7 @@ export default function Layout({ children, currentPageName }) {
         let mainTitle = '';
         let subTitle = null;
 
-        const dashboardPages = ['Dashboard', 'RealmDashboard', 'CompanyDashboard', 'SiteDashboard', 'PlacementDashboard', 'DSPDashboard', 'DealDashboard'];
+        const dashboardPages = ['Dashboard', 'Dashboard2', 'RealmDashboard', 'CompanyDashboard', 'SiteDashboard', 'PlacementDashboard', 'DSPDashboard', 'DealDashboard'];
         const supplyPages = ['Broker', 'Realm', 'Company', 'Site', 'Placement'];
         const demandPages = ['DSPManagement', 'DSP', 'EditDSP', 'UserSyncManagement', 'EditUserSync', 'UserSync', 'BlockedCreativeManagement'];
         const builderPages = ['BuilderOperations', 'BuilderAdserver'];
@@ -142,7 +143,7 @@ export default function Layout({ children, currentPageName }) {
     
     // Check if current page is a dashboard page
     const isDashboardPage = () => {
-        const dashboardPages = ['Dashboard', 'RealmDashboard', 'BrokerProfitability', 'RealmProfitability', 'DSPProfitability', 'CompanyDashboard', 'SiteDashboard', 'PlacementDashboard', 'DSPDashboard', 'DealDashboard', 'SalesDashboard'];
+        const dashboardPages = ['Dashboard', 'Dashboard2', 'RealmDashboard', 'BrokerProfitability', 'RealmProfitability', 'DSPProfitability', 'CompanyDashboard', 'SiteDashboard', 'PlacementDashboard', 'DSPDashboard', 'DealDashboard', 'SalesDashboard'];
         return dashboardPages.includes(currentPageName);
     };
     
@@ -863,6 +864,7 @@ export default function Layout({ children, currentPageName }) {
             icon: <Layers className="w-4 h-4" />,
             children: [
         { name: 'Overview', path: 'Dashboard', icon: <Globe className="w-4 h-4" /> },
+        { name: 'Overview 2', path: 'Dashboard2', icon: <BarChart3 className="w-4 h-4" /> },
         { name: 'Realm', path: 'RealmDashboard', icon: <Globe2 className="w-4 h-4" /> },
         { name: 'Company', path: 'CompanyDashboard', icon: <Building2 className="w-4 h-4" /> },
         { name: 'Site', path: 'SiteDashboard', icon: <LinkIcon className="w-4 h-4" /> },
@@ -972,6 +974,13 @@ export default function Layout({ children, currentPageName }) {
         },
     ];
 
+    /** Extension: hide Profitability / Builder / Users */
+    const navMainItems = IS_EXTENSION
+        ? mainNavItems.filter((item) => !['Profitability', 'Builder', 'Users'].includes(item.name))
+        : mainNavItems;
+
+    const navDashboardSubItems = dashboardSubItems;
+
     return (
         <div className="min-h-screen bg-slate-50 flex">
             {/* Left Sidebar - Compact vertical icons */}
@@ -1008,7 +1017,7 @@ export default function Layout({ children, currentPageName }) {
 
                 {/* Desktop Navigation - Vertical icon menu */}
                 <nav className="flex-1 w-full py-4 flex flex-col items-center">
-                    {mainNavItems.map((item) => (
+                    {navMainItems.map((item) => (
                         <div key={item.name} className="w-full flex items-center justify-center">
                             {item.path ? (
                                 <Link
@@ -1108,7 +1117,7 @@ export default function Layout({ children, currentPageName }) {
                     
                     {/* Sub-menu items */}
                     <nav className="flex-1 p-4 space-y-3">
-                        {openSubMenu === 'Monitoring' && dashboardSubItems.map((subItem) => (
+                        {openSubMenu === 'Monitoring' && navDashboardSubItems.map((subItem) => (
                             subItem.children ? (
                                 <div key={subItem.name} className="space-y-2">
                                     <div className={cn('flex items-center gap-2 px-3', TAILWIND_CLASSES.formSectionLabel)}>
@@ -1665,7 +1674,7 @@ export default function Layout({ children, currentPageName }) {
                                 </div>
                             </div>
                             <nav className="p-4 space-y-1">
-                                    {mainNavItems.map((item) => (
+                                    {navMainItems.map((item) => (
                                         <div key={item.name}>
                                             {item.path ? (
                                                 <Link
@@ -1718,7 +1727,7 @@ export default function Layout({ children, currentPageName }) {
                                             {/* Show sub-menu for Monitoring */}
                                             {item.name === 'Monitoring' && ((currentPageName === 'Dashboard' || currentPageName === 'RealmDashboard' || currentPageName === 'BrokerDashboard' || currentPageName === 'DSPDashboard' || currentPageName === 'DealDashboard' || currentPageName === 'SalesDashboard') || openSubMenu === 'Monitoring') && (
                                                 <div className="ml-8 mt-2 space-y-2 animate-in slide-in-from-left duration-300 ease-out">
-                                                    {dashboardSubItems.map((subItem) =>
+                                                    {navDashboardSubItems.map((subItem) =>
                                                         subItem.children ? (
                                                             <div key={subItem.name} className="space-y-1">
                                                                 <div className={cn('flex items-center gap-2 px-3 py-1', TAILWIND_CLASSES.formSectionLabel)}>

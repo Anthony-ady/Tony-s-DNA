@@ -35,6 +35,7 @@ import html2canvas from 'html2canvas';
 import HourlyAnalyticsSummaryCards from '@/components/analytics/HourlyAnalyticsSummaryCards';
 import HourlyChartXAxis, { hourlyChartMargins } from '@/components/analytics/HourlyChartXAxis';
 import { prepareHourlyChartData } from '@/utils/hourlyProjections';
+import { IS_EXTENSION } from '@/config/appMode';
 
 /**
  * Right-panel adserver_stats queries: in real-time (hourly) mode use the current UTC day
@@ -274,7 +275,9 @@ export default function AnalyticsTemplate({
   // Menu items configuration
   // Determine if we should show OVERVIEW menu item
   // Show it for DSPAnalytics, RealmAnalytics and CompanyAnalytics, hide it for SiteAnalytics, PlacementAnalytics
-  const shouldShowOverview = !location.pathname.includes('/SiteAnalytics') &&
+  const shouldShowOverview =
+    !IS_EXTENSION &&
+    !location.pathname.includes('/SiteAnalytics') &&
     !location.pathname.includes('/PlacementAnalytics') &&
     (location.pathname.includes('/DSPAnalytics') ||
      location.pathname.includes('/RealmAnalytics') ||

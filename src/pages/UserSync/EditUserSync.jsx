@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Link2, Type, Shield, Radio, ListOrdered } from "lucide-react";
@@ -19,14 +19,14 @@ export default function EditUserSync() {
   const nameFromUrl = searchParams.get("name");
 
   const [activeSection, setActiveSection] = useState("basic");
-  const [editor, setEditor] = useState({
-    hasPending: false,
-    saving: false,
-    save: async () => {},
-  });
+  const saveRef = useRef(async () => {});
+  const [hasPending, setHasPending] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const onStatusChange = useCallback((s) => {
-    setEditor(s);
+  const onStatusChange = useCallback(({ hasPending: pending, saving: isSaving, save }) => {
+    saveRef.current = save;
+    setHasPending(pending);
+    setSaving(isSaving);
   }, []);
 
   const displayName = nameFromUrl?.trim() ? decodeURIComponent(nameFromUrl) : "User sync";
@@ -58,12 +58,13 @@ export default function EditUserSync() {
       title={truncatedName}
       titleTooltip={displayName}
       subtitle="Edit user sync configuration"
-      onSave={() => editor.save()}
+      onSave={() => saveRef.current()}
       onCancel={() => navigate("/UserSyncManagement")}
-      saving={editor.saving}
-      saveDisabled={!editor.hasPending}
+      saving={saving}
+      saveDisabled={!hasPending}
     >
       <UserSyncPanel
+        key={uid}
         uid={uid}
         nameFromUrl={nameFromUrl}
         embedded={false}

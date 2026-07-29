@@ -130,12 +130,19 @@ export function UserSyncPanel({
     if (!uid) return;
     const token = getToken();
     if (!token) { setError('No authentication token'); return; }
-    setLoading(true); setError(null);
+
+    const controller = new AbortController();
+    let cancelled = false;
+
+    setLoading(true);
+    setError(null);
     fetch(apiUrl.cookieSync(uid), {
-      headers: { 'x-ayl-auth-token': token, 'Content-Type': 'application/json' }
+      signal: controller.signal,
+      headers: { 'x-ayl-auth-token': token, 'Content-Type': 'application/json' },
     })
       .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); })
       .then(json => {
+        if (cancelled) return;
         const raw = json?.Data ?? json;
         setData({
           ...raw,
@@ -147,8 +154,18 @@ export function UserSyncPanel({
         });
         setHasPending(false);
       })
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
+      .catch(e => {
+        if (cancelled || e.name === 'AbortError') return;
+        setError(e.message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uid]);
 
@@ -202,10 +219,17 @@ export function UserSyncPanel({
     finally { setSaving(false); }
   }, [data, getToken, uid]);
 
+  const handleSaveRef = useRef(handleSave);
+  handleSaveRef.current = handleSave;
+
   useEffect(() => {
     if (embedded || !onStatusChange) return;
-    onStatusChange({ hasPending, saving, save: handleSave });
-  }, [embedded, onStatusChange, hasPending, saving, handleSave]);
+    onStatusChange({
+      hasPending,
+      saving,
+      save: () => handleSaveRef.current(),
+    });
+  }, [embedded, onStatusChange, hasPending, saving]);
 
   const updateEndpointUrl = (idx, url) => applyChange(d => { d.endpoints[idx].url = url; });
   const removeEndpoint = (idx) => applyChange(d => { d.endpoints.splice(idx, 1); });

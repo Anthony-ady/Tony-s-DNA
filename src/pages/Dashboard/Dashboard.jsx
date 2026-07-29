@@ -43,6 +43,7 @@ import { API_ENDPOINTS } from "@/config/api";
 import { formatCurrency, formatCurrencyChart, formatLargeNumber, formatEcpm, formatRpbr, formatPercentage } from "@/utils/formatters";
 import { cn } from "@/lib/utils";
 import { TAILWIND_CLASSES } from "@/config/theme";
+import { IS_EXTENSION } from "@/config/appMode";
 import {
   processHourlyTodayWithProjections,
   computeHourlySummaryStats,
@@ -2966,8 +2967,7 @@ export default function Dashboard({ useNetworkOpsForDaily = true }) {
     { id: 'seat', label: 'SEAT' },
     { id: 'ad-domain', label: 'AD DOMAIN' },
     { id: 'site-domain', label: 'SITE DOMAIN' },
-    // Global overview, mirroring the style of DSPDashboard Business Review / OVERVIEW
-    { id: 'overview', label: 'OVERVIEW' },
+    ...(IS_EXTENSION ? [] : [{ id: 'overview', label: 'OVERVIEW' }]),
   ];
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);

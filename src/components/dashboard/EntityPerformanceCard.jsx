@@ -1,6 +1,7 @@
 import React from "react";
 import { DollarSign, TrendingUp, BarChart3, ExternalLink } from "lucide-react";
 import { enqueueSparklineFetch } from "@/utils/sparklineFetchQueue";
+import { openAppRouteInNewTab } from "@/utils";
 import { computeHourlySummaryStats, parseHourFromItem } from "@/utils/hourlyProjections";
 import HourlyChartXAxis, { hourlyChartMargins } from "@/components/analytics/HourlyChartXAxis";
 import {
@@ -176,7 +177,7 @@ export function EntityPerformanceCard({
     e.stopPropagation();
     if (!getDetailUrl || !entityId || !entityName) return;
     const url = getDetailUrl(entityId, entityName);
-    if (url) window.open(url, "_blank", "noopener,noreferrer");
+    if (url) openAppRouteInNewTab(url);
   };
 
   const stripM = (value) => {
