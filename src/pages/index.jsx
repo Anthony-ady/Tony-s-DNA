@@ -11,7 +11,6 @@ import { IS_EXTENSION } from "@/config/appMode";
 
 const Login = lazy(() => import("./Login"));
 const Dashboard = lazy(() => import("./Dashboard/Dashboard.jsx"));
-const Dashboard2 = lazy(() => import("./Dashboard/Dashboard2.jsx"));
 const RealmDashboard = lazy(() => import("./Dashboard/RealmDashboard.jsx"));
 const BrokerProfitability = lazy(() => import("./Dashboard/BrokerProfitability.jsx"));
 const RealmProfitability = lazy(() => import("./Dashboard/RealmProfitability.jsx"));
@@ -65,7 +64,6 @@ const BuilderAdserver = lazy(() => import("./Builder/BuilderAdserver.jsx"));
 
 const PAGES = {
   Dashboard,
-  Dashboard2,
   RealmDashboard,
   BrokerProfitability,
   RealmProfitability,
@@ -205,7 +203,6 @@ const protectedChildren = [
   { path: "/RealmAnalytics", element: <RealmAnalytics /> },
   { path: "/EditRealm", element: <EditRealm /> },
   { path: "/Dashboard", element: <Dashboard /> },
-  { path: "/Dashboard2", element: <Dashboard2 /> },
   { path: "/BuilderOperations", element: <BuilderOperations /> },
   { path: "/BuilderAdserver", element: <BuilderAdserver /> },
 ];

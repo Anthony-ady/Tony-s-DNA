@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Building2, Target, Menu, X, Zap, HandCoins, Network, LogOut, User, Globe, BarChart3, Plus, Clock, FileText, Megaphone, Gavel, Users, DollarSign, Monitor, ChevronRight, ChevronLeft, ChevronDown, Crown, Search, Layers, ArrowLeftRight, UserCog, Settings, Hammer, Server, History, Activity, Loader2, RefreshCw, Link as LinkIcon, Link2, Globe2, TrendingUp, ShieldOff } from 'lucide-react';
+import { Building2, Target, Menu, X, Zap, HandCoins, Network, LogOut, User, Globe, Plus, Clock, FileText, Megaphone, Gavel, Users, DollarSign, Monitor, ChevronRight, ChevronLeft, ChevronDown, Crown, Search, Layers, ArrowLeftRight, UserCog, Settings, Hammer, Server, History, Activity, Loader2, RefreshCw, Link as LinkIcon, Link2, Globe2, TrendingUp, ShieldOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { authService } from '@/services/authService';
 import { clearCache, cachedFetch } from '@/utils/apiCache';
@@ -68,7 +68,7 @@ export default function Layout({ children, currentPageName }) {
         let mainTitle = '';
         let subTitle = null;
 
-        const dashboardPages = ['Dashboard', 'Dashboard2', 'RealmDashboard', 'CompanyDashboard', 'SiteDashboard', 'PlacementDashboard', 'DSPDashboard', 'DealDashboard'];
+        const dashboardPages = ['Dashboard', 'RealmDashboard', 'CompanyDashboard', 'SiteDashboard', 'PlacementDashboard', 'DSPDashboard', 'DealDashboard'];
         const supplyPages = ['Broker', 'Realm', 'Company', 'Site', 'Placement'];
         const demandPages = ['DSPManagement', 'DSP', 'EditDSP', 'UserSyncManagement', 'EditUserSync', 'UserSync', 'BlockedCreativeManagement'];
         const builderPages = ['BuilderOperations', 'BuilderAdserver'];
