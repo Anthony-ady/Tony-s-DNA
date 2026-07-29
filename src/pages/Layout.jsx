@@ -111,7 +111,7 @@ export default function Layout({ children, currentPageName }) {
             mainTitle = 'Builder';
             const item = builderSubItems.find(si => si.path === currentPageName);
             if (item) subTitle = item.name;
-        } else if (currentPageName === 'Deal' || currentPageName === 'DealAnalytics' || currentPageName === 'EditDeal') {
+        } else if (currentPageName === 'Deal' || currentPageName === 'DealAnalytics' || currentPageName === 'EditDeal' || currentPageName === 'CreateDeal') {
             mainTitle = 'Deals';
         } else if (currentPageName === 'UserManagement') {
             mainTitle = 'Users';

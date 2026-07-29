@@ -58,6 +58,7 @@ const CreateUser = lazy(() => import("./User/CreateUser.jsx"));
 const Deal = lazy(() => import("./Deal/Deal"));
 const DealAnalytics = lazy(() => import("./Deal/DealAnalytics"));
 const EditDeal = lazy(() => import("./Deal/EditDeal"));
+const CreateDeal = lazy(() => import("./Deal/CreateDeal"));
 
 const BuilderOperations = lazy(() => import("./Builder/BuilderOperations.jsx"));
 const BuilderAdserver = lazy(() => import("./Builder/BuilderAdserver.jsx"));
@@ -98,6 +99,7 @@ const PAGES = {
   Deal,
   DealAnalytics,
   EditDeal,
+  CreateDeal,
   BuilderOperations,
   BuilderAdserver,
   UserSyncManagement,
@@ -191,6 +193,7 @@ const protectedChildren = [
   { path: "/Deal", element: <Deal /> },
   { path: "/DealAnalytics", element: <DealAnalytics /> },
   { path: "/EditDeal", element: <EditDeal /> },
+  { path: "/CreateDeal", element: <CreateDeal /> },
   { path: "/Placement", element: <Placement /> },
   { path: "/PlacementDashboard", element: <PlacementDashboard /> },
   { path: "/PlacementAnalytics", element: <PlacementAnalytics /> },

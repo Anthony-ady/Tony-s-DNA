@@ -6,7 +6,7 @@ import { Badge } from '../../components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { Progress } from '../../components/ui/progress';
-import { Loader2, Building2, BarChart3, Edit, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
+import { Loader2, Building2, BarChart3, Edit, ChevronLeft, ChevronRight, AlertCircle, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../../services/authService';
 import { formatError } from '../../utils/errorFormatter';
@@ -290,6 +290,19 @@ export default function Deal() {
   return (
     <div className="bg-slate-50 flex flex-col min-h-screen">
       <div className="flex flex-col p-3">
+        <div className="mb-3 flex items-center justify-end">
+          <Button
+            variant="default"
+            size="sm"
+            className="h-8 bg-[rgb(75,99,226)] hover:bg-[rgb(75,99,226)]/90"
+            onClick={() => navigate('/CreateDeal')}
+            title="Create New Deal"
+          >
+            <Plus className="w-4 h-4 mr-1" />
+            New
+          </Button>
+        </div>
+
         {/* Error Alert */}
         {error && (
           <Alert variant="destructive" className="mb-6 border-red-200 bg-red-50">
