@@ -143,7 +143,7 @@ export default function Layout({ children, currentPageName }) {
     
     // Check if current page is a dashboard page
     const isDashboardPage = () => {
-        const dashboardPages = ['Dashboard', 'Dashboard2', 'RealmDashboard', 'BrokerProfitability', 'RealmProfitability', 'DSPProfitability', 'CompanyDashboard', 'SiteDashboard', 'PlacementDashboard', 'DSPDashboard', 'DealDashboard', 'SalesDashboard'];
+        const dashboardPages = ['Dashboard', 'RealmDashboard', 'BrokerProfitability', 'RealmProfitability', 'DSPProfitability', 'CompanyDashboard', 'SiteDashboard', 'PlacementDashboard', 'DSPDashboard', 'DealDashboard', 'SalesDashboard'];
         return dashboardPages.includes(currentPageName);
     };
     
@@ -864,7 +864,6 @@ export default function Layout({ children, currentPageName }) {
             icon: <Layers className="w-4 h-4" />,
             children: [
         { name: 'Overview', path: 'Dashboard', icon: <Globe className="w-4 h-4" /> },
-        { name: 'Overview 2', path: 'Dashboard2', icon: <BarChart3 className="w-4 h-4" /> },
         { name: 'Realm', path: 'RealmDashboard', icon: <Globe2 className="w-4 h-4" /> },
         { name: 'Company', path: 'CompanyDashboard', icon: <Building2 className="w-4 h-4" /> },
         { name: 'Site', path: 'SiteDashboard', icon: <LinkIcon className="w-4 h-4" /> },
