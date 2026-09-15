@@ -10,6 +10,22 @@
   {
     "uid": "f06ebccd-0173-49ff-92cf-942b0f741275",
     "name": "gambling_block"
+  },
+  {
+    "uid": "36211eb4-13d8-4aa5-91d5-3392f7124044",
+    "name": "traffective_28_10_2025_100percent"
+  },
+  {
+    "uid": "0b6ad8be-66ab-4936-9acc-e83253ec7a8a",
+    "name": "ESI_ad_domains"
+  },
+  {
+    "uid": "28b342da-b17f-4287-8ad8-f7b647ef4532",
+    "name": "future_policy"
+  },
+  {
+    "uid": "e5d13346-bdad-4a0c-baed-5c3a24ed0b3c",
+    "name": "gumtree_blocklist"
   }
 ]
 
