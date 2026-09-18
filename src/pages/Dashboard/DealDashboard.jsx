@@ -221,23 +221,76 @@ export default function DealDashboard() {
     return buildAdserverHourlySummaryPayload(begin, end, filters);
   }, [selectedRealmId]);
 
+  const normalizeDealAmounts = (item) => {
+    if (
+      item.network_operations_price_publisher !== undefined ||
+      item.network_operations_price_advertiser !== undefined
+    ) {
+      return {
+        ...item,
+        PriceAdvertiser_PublisherSide: (item.network_operations_price_advertiser || 0) * 1_000_000,
+        PricePublisher: (item.network_operations_price_publisher || 0) * 1_000_000
+      };
+    }
+    return item;
+  };
+
+  // Montants d'un deal sur l'ensemble des realms. La requête de liste est filtrée
+  // par realm pour ne retenir que les deals qui y tournent, mais les montants
+  // affichés doivent couvrir le deal en entier, pas sa seule part dans ce realm.
+  const fetchDealTotalsAcrossRealms = async (dealIds, startDate, endDate) => {
+    const token = authService.getToken();
+    if (!token || !dealIds.length || !startDate || !endDate) return [];
+
+    const payload = {
+      ...topDealsPayload(startDate, endDate),
+      Filters: { DealId: { "Value": dealIds, "Operator": "in" } }
+    };
+
+    try {
+      const response = await cachedFetch(API_ENDPOINTS.DRUID_SEARCH, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-ayl-auth-token': token
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      return (data.Data || []).filter((item) => item.DealId || item.dealId);
+    } catch (err) {
+      console.error('Error fetching deal totals across realms:', err);
+      return [];
+    }
+  };
+
   // Process top deals response
-  const processTopDealsResponse = (data) => {
+  const processTopDealsResponse = async (data, { startDate, endDate } = {}) => {
     const entities = (data.Data || []).filter(item => item.DealId || item.dealId);
-    const normalizedEntities = entities.map((item) => {
-      if (
-        item.network_operations_price_publisher !== undefined ||
-        item.network_operations_price_advertiser !== undefined
-      ) {
-        return {
-          ...item,
-          PriceAdvertiser_PublisherSide: (item.network_operations_price_advertiser || 0) * 1_000_000,
-          PricePublisher: (item.network_operations_price_publisher || 0) * 1_000_000
-        };
+
+    // Le realm sélectionné ne sert qu'à choisir les deals affichés : on remplace
+    // ensuite leurs montants par les totaux tous realms confondus.
+    let source = entities;
+    if (getSelectedRealmId() && entities.length) {
+      const totals = await fetchDealTotalsAcrossRealms(
+        entities.map(getDealId).filter(Boolean), startDate, endDate
+      );
+      if (totals.length) {
+        const totalsById = new Map(totals.map((item) => [getDealId(item), item]));
+        source = entities.map((item) => {
+          const total = totalsById.get(getDealId(item));
+          return total ? { ...item, ...total } : item;
+        });
       }
-      return item;
-    });
-    
+    }
+
+    // L'ordre renvoyé par l'API porte sur les montants du realm ; on retrie sur
+    // les totaux effectivement affichés.
+    const normalizedEntities = source
+      .map(normalizeDealAmounts)
+      .sort((a, b) => (b.PricePublisher || 0) - (a.PricePublisher || 0));
+
     const totalEntityRevenue = normalizedEntities.reduce((sum, item) => sum + (item.PriceAdvertiser_PublisherSide || 0), 0);
     const totalPublisherCosts = normalizedEntities.reduce((sum, item) => sum + (item.PricePublisher || 0), 0);
     const totalMargin = totalEntityRevenue - totalPublisherCosts;

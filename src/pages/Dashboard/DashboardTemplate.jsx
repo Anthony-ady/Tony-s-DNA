@@ -319,7 +319,10 @@ export default function DashboardTemplate({
       }
 
       const data = await response.json();
-      const processed = processTopEntitiesResponse(data);
+      const processed = await processTopEntitiesResponse(data, {
+        startDate: fetchStart,
+        endDate: fetchEnd,
+      });
 
       setTopEntitiesData(processed.entities || []);
       if (isHourlySummary) {

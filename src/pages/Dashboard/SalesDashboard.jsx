@@ -120,13 +120,10 @@ export default function SalesDashboard() {
       networkOpsEndDate.setMilliseconds(999);
       const networkOpsBeginDate = new Date(beginDate) >= todayStart ? yesterdayStart : new Date(beginDate);
 
+      // Pas de filtre realm ici : la sélection des deals est déjà faite par
+      // DEALS_SEARCH (Realm_uid), et les montants doivent couvrir le deal en
+      // entier, pas sa seule part dans le realm sélectionné.
       const filters = {};
-      if (selectedRealmId) {
-        filters.realmId = {
-          "Value": [selectedRealmId],
-          "Operator": "in"
-        };
-      }
       if (dealIds.length > 0) {
         filters.DealId = {
           "Value": dealIds,
@@ -295,16 +292,12 @@ export default function SalesDashboard() {
         networkOpsEndDate.setMilliseconds(999);
         const networkOpsBeginDate = new Date(beginDate) >= todayStart ? yesterdayStart : new Date(beginDate);
 
-        const dailyFilters = {};
-        if (selectedRealmId) {
-          dailyFilters.realmId = {
-            "Value": [selectedRealmId],
+        // Mêmes montants que l'en-tête de la carte : tous realms confondus.
+        const dailyFilters = {
+          DealId: {
+            "Value": [dealId],
             "Operator": "in"
-          };
-        }
-        dailyFilters.DealId = {
-          "Value": [dealId],
-          "Operator": "in"
+          }
         };
 
         payload = {
